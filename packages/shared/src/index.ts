@@ -7,6 +7,8 @@ export * from "./deployment";
 export * from "./errors";
 export * from "./health";
 export * from "./manifest";
+export * from "./mcp";
+export * from "./operations";
 export * from "./preview";
 export * from "./quotas";
 export * from "./usage";

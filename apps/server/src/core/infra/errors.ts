@@ -78,6 +78,12 @@ export class InsufficientScope extends AppError {
   }
 }
 
+export class MethodNotAllowed extends AppError {
+  constructor(allow: string, fix?: string) {
+    super(405, "METHOD_NOT_ALLOWED", `Method not allowed; use ${allow}`, fix, { Allow: allow });
+  }
+}
+
 export class InternalError extends AppError {
   constructor(message = "Internal server error", code = "INTERNAL_ERROR") {
     super(500, code, message);

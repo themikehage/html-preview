@@ -1,6 +1,6 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "files": { "ignore": ["dist", "node_modules", "data"] },
+  "files": { "ignore": ["dist", "node_modules", "data", "docs/*.snapshot.*"] },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
   "linter": {
     "rules": {

@@ -9,8 +9,15 @@ import type { ServerContext } from "./server-context";
 
 export type AppEnv = { Variables: { apiKey: ApiKey } };
 
-export function authMiddleware(ctx: ServerContext): MiddlewareHandler<AppEnv> {
-  const limiter = new TokenBucketLimiter(ctx.config.RATE_LIMIT_PER_MIN, ctx.deps.clock);
+export function createLimiter(ctx: ServerContext): TokenBucketLimiter {
+  return new TokenBucketLimiter(ctx.config.RATE_LIMIT_PER_MIN, ctx.deps.clock);
+}
+
+/** `limiter` is shared by every surface (HTTP API, MCP) so a key has one budget. */
+export function authMiddleware(
+  ctx: ServerContext,
+  limiter: TokenBucketLimiter,
+): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
     const key = authenticate(ctx.deps, c.req.header("authorization"));
     const decision = limiter.take(key.id);

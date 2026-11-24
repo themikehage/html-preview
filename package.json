@@ -8,6 +8,7 @@
     "dev": "bun run --hot apps/server/src/index.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome check .",
+    "gen:docs": "bun scripts/gen-docs.ts",
     "check:size": "bun scripts/check-size.ts",
     "check:license": "bun scripts/check-license.ts",
     "test": "bun test",

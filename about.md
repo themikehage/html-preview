@@ -7,7 +7,7 @@ html-preview es un servidor autohospedado y agent-first para desplegar y gestion
 
 Users are AI agents (Claude Code, Codex, Spaces agents, any MCP client) and the person who runs the instance. Core entities: **Preview** (named, mutable alias), **Deployment** (immutable manifest of files), **Blob** (content-addressed file), **API key**, **Share link**. Full product design: [docs/design.md](./docs/design.md).
 
-> **State**: H1–H4 done: foundation, storage, `/v1` deploy/manage API with scoped API keys, the path-mode content server, quotas, rate limit, reaper/GC and deploy warnings. MCP/docs (H5), CLI (H6), dashboard/private/share (H7) are next. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
+> **State**: H1–H5 done: foundation, storage, `/v1` deploy/manage API with scoped API keys, the path-mode content server, quotas, rate limit, reaper/GC, deploy warnings, MCP server and generated agent docs. , CLI (H6), dashboard/private/share (H7) are next. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
 
 ---
 
@@ -66,6 +66,7 @@ docs/design.md     product design (source of truth)
 - Bun 1.3.14: `HTMLRewriter` on a file-backed `Response` hangs under `Bun.serve` (buffer first) and `for await` over a request `ReadableStream` throws (use `getReader()`). In-process `fetch` tests do not catch these; keep real-socket tests (`Bun.serve({ port: 0 })`).
 - `GET /v1/previews/:name/files/*` serves untrusted files from the API origin as `text/plain`/`octet-stream` with `CSP: sandbox` + `nosniff`; never relax that.
 - Lifecycle: `runReaper` (every 10 min via `core/infra/scheduler.ts`, started in `index.ts` only) deletes expired non-pinned previews, stale `pending` plans (>1 h) and empty previews, prunes ready deployments beyond `KEEP_DEPLOYMENTS` (never the current one), then GC removes unreferenced blobs older than 1 h (the reference check runs per blob right before deleting). Everything is idempotent. Deploy responses carry `warnings` from `domain/warnings.ts`.
+- Agent surfaces: `/mcp` is stateless streamable HTTP (POST only, JSON responses, one `McpServer` per request) authenticated and rate-limited like `/v1`; tools live in `mcp/tools/` and call the same domain services. `packages/shared/src/operations.ts` is the one registry of HTTP operations: `/openapi.json`, `/llms.txt` and the route contract test derive from it. Adding or changing a route/schema means updating `OPERATIONS` and running `bun run gen:docs` (committed `docs/*.snapshot.*` are compared in tests). `skill/SKILL.md` is the agent skill.
 - Error codes are listed in `packages/shared/src/errors.ts` (`ERROR_CODES`); add, never rename.
 - Bun `Statement.run().changes` includes rows removed by `ON DELETE CASCADE`: count deletions with `RETURNING id`. Blob mtimes are real fs times, not the fake clock: tests age them with `test-support/blobs.ts`.
 - Tests: `useTestContext()` from `src/test-support/context.ts` gives a temp `DATA_DIR`, fake clock and cleanup.
@@ -86,6 +87,7 @@ docs/design.md     product design (source of truth)
 | `MAX_VISIBILITY` | `unlisted`, `private` or `public` ceiling | `unlisted` |
 | `DEFAULT_TTL_HOURS` | Default preview lifetime, `0` = never | `168` |
 | `MAX_DEPLOY_BYTES` / `MAX_DEPLOY_FILES` / `MAX_TOTAL_BYTES` | Quotas | `52428800` / `2000` / `5368709120` |
+| `MCP_MAX_INLINE_BYTES` | Max inline payload for MCP deploy tools | `1048576` |
 | `KEEP_DEPLOYMENTS` | Ready deployments kept per preview | `10` |
 | `RATE_LIMIT_PER_MIN` | Requests per minute per API key, `0` = off | `120` |
 | `FRAME_ANCESTORS` | Extra origins allowed to embed previews | — |
@@ -104,4 +106,5 @@ docs/design.md     product design (source of truth)
 - `curl` against a local server (deploy, then fetch the returned URL). `/TEST` with Playwright for the dashboard from H7.
 
 ### Server
+- `bun run gen:docs` — regenerate `docs/openapi.snapshot.json` and `docs/llms.snapshot.txt` after changing schemas or operations.
 - `bun run dev` — server with hot reload on `:3000` (both origins via `localhost` / `127.0.0.1` in dev).

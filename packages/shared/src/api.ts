@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { DeploymentSummary } from "./deployment";
-import { ManifestInput, Sha256 } from "./manifest";
+import { Manifest, ManifestInput, Sha256 } from "./manifest";
 import { Preview, PreviewName, Visibility } from "./preview";
 
 const TTL_HOURS_MAX = 24 * 365 * 10;
@@ -85,3 +85,10 @@ export const PreviewDetail = z.object({
   deployments: z.array(DeploymentView),
 });
 export type PreviewDetail = z.infer<typeof PreviewDetail>;
+
+export const FileListing = z.object({
+  deploymentId: z.string(),
+  entry: z.string(),
+  files: Manifest,
+});
+export type FileListing = z.infer<typeof FileListing>;

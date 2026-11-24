@@ -7,8 +7,10 @@
   "dependencies": {
     "@hono/zod-validator": "^0.9.1",
     "@html-preview/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "fflate": "^0.8.3",
     "hono": "^4.6.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.25.2"
   }
 }

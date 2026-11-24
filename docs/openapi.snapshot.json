@@ -1,0 +1,2404 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "html-preview API",
+    "version": "0.0.0",
+    "description": "Deploy static HTML previews and get a stable URL. Generated from the same Zod schemas as the server."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "health",
+        "summary": "Liveness probe",
+        "responses": {
+          "200": {
+            "description": "Server is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/previews": {
+      "get": {
+        "operationId": "listPreviews",
+        "summary": "List previews",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                }
+              ]
+            }
+          },
+          {
+            "name": "createdBy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of previews",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "previews": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 22,
+                            "maxLength": 22
+                          },
+                          "name": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+                          },
+                          "visibility": {
+                            "type": "string",
+                            "enum": [
+                              "unlisted",
+                              "private",
+                              "public"
+                            ]
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "pinned": {
+                            "type": "boolean"
+                          },
+                          "currentDeploymentId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdBy": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "url": {
+                            "type": "string",
+                            "format": "uri"
+                          },
+                          "deployment": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "previewId": {
+                                "type": "string"
+                              },
+                              "entry": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "bytes": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "fileCount": {
+                                "type": "integer",
+                                "exclusiveMinimum": true,
+                                "minimum": 0
+                              },
+                              "uploaded": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "ready"
+                                ]
+                              },
+                              "createdBy": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "previewId",
+                              "entry",
+                              "message",
+                              "bytes",
+                              "fileCount",
+                              "uploaded",
+                              "status",
+                              "createdBy",
+                              "createdAt"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "visibility",
+                          "expiresAt",
+                          "pinned",
+                          "currentDeploymentId",
+                          "createdBy",
+                          "createdAt",
+                          "updatedAt",
+                          "url",
+                          "deployment"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "previews",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/previews/{name}": {
+      "get": {
+        "operationId": "getPreview",
+        "summary": "Preview detail with its deployments",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "preview": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 22,
+                          "maxLength": 22
+                        },
+                        "name": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "unlisted",
+                            "private",
+                            "public"
+                          ]
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "pinned": {
+                          "type": "boolean"
+                        },
+                        "currentDeploymentId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdBy": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "url": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "deployment": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "previewId": {
+                              "type": "string"
+                            },
+                            "entry": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "bytes": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "fileCount": {
+                              "type": "integer",
+                              "exclusiveMinimum": true,
+                              "minimum": 0
+                            },
+                            "uploaded": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "ready"
+                              ]
+                            },
+                            "createdBy": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "previewId",
+                            "entry",
+                            "message",
+                            "bytes",
+                            "fileCount",
+                            "uploaded",
+                            "status",
+                            "createdBy",
+                            "createdAt"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "visibility",
+                        "expiresAt",
+                        "pinned",
+                        "currentDeploymentId",
+                        "createdBy",
+                        "createdAt",
+                        "updatedAt",
+                        "url",
+                        "deployment"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "deployments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "previewId": {
+                            "type": "string"
+                          },
+                          "entry": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "bytes": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "fileCount": {
+                            "type": "integer",
+                            "exclusiveMinimum": true,
+                            "minimum": 0
+                          },
+                          "uploaded": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "ready"
+                            ]
+                          },
+                          "createdBy": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "url": {
+                            "type": "string",
+                            "format": "uri"
+                          },
+                          "current": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "previewId",
+                          "entry",
+                          "message",
+                          "bytes",
+                          "fileCount",
+                          "uploaded",
+                          "status",
+                          "createdBy",
+                          "createdAt",
+                          "url",
+                          "current"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "preview",
+                    "deployments"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "deployPreview",
+        "summary": "One-shot deploy: send an HTML page, zip, tar.gz or multipart files",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "deploy",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+            }
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "unlisted",
+                    "private",
+                    "public"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "ttl",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "allOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 87600
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "entry",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "maxLength": 500
+                }
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/html": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "A single page, stored as index.html"
+              }
+            },
+            "application/zip": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "A folder as zip; a single top-level folder is stripped"
+              }
+            },
+            "application/gzip": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "A folder as tar.gz; a single top-level folder is stripped"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "One part per file, the file name is the path"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Preview updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "deploymentUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "deploymentId": {
+                      "type": "string"
+                    },
+                    "created": {
+                      "type": "boolean"
+                    },
+                    "files": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "uploaded": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "ROOT_RELATIVE_URL",
+                              "NO_ENTRY_HTML",
+                              "LOCALHOST_URL",
+                              "MIXED_CONTENT",
+                              "LARGE_FILE"
+                            ]
+                          },
+                          "file": {
+                            "type": "string"
+                          },
+                          "fix": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "fix"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "deploymentUrl",
+                    "name",
+                    "deploymentId",
+                    "created",
+                    "files",
+                    "bytes",
+                    "uploaded",
+                    "expiresAt",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Preview created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "deploymentUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "deploymentId": {
+                      "type": "string"
+                    },
+                    "created": {
+                      "type": "boolean"
+                    },
+                    "files": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "uploaded": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "ROOT_RELATIVE_URL",
+                              "NO_ENTRY_HTML",
+                              "LOCALHOST_URL",
+                              "MIXED_CONTENT",
+                              "LARGE_FILE"
+                            ]
+                          },
+                          "file": {
+                            "type": "string"
+                          },
+                          "fix": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "fix"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "deploymentUrl",
+                    "name",
+                    "deploymentId",
+                    "created",
+                    "files",
+                    "bytes",
+                    "uploaded",
+                    "expiresAt",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updatePreview",
+        "summary": "Change visibility, ttl, pinned or rename",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "deploy",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "unlisted",
+                      "private",
+                      "public"
+                    ]
+                  },
+                  "ttl": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 87600
+                  },
+                  "pinned": {
+                    "type": "boolean"
+                  },
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 22,
+                      "maxLength": 22
+                    },
+                    "name": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+                    },
+                    "visibility": {
+                      "type": "string",
+                      "enum": [
+                        "unlisted",
+                        "private",
+                        "public"
+                      ]
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "pinned": {
+                      "type": "boolean"
+                    },
+                    "currentDeploymentId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdBy": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "deployment": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "previewId": {
+                          "type": "string"
+                        },
+                        "entry": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "bytes": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "fileCount": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        },
+                        "uploaded": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "ready"
+                          ]
+                        },
+                        "createdBy": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "previewId",
+                        "entry",
+                        "message",
+                        "bytes",
+                        "fileCount",
+                        "uploaded",
+                        "status",
+                        "createdBy",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "visibility",
+                    "expiresAt",
+                    "pinned",
+                    "currentDeploymentId",
+                    "createdBy",
+                    "createdAt",
+                    "updatedAt",
+                    "url",
+                    "deployment"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePreview",
+        "summary": "Delete a preview and its deployments",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "deploy",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/previews/{name}/rollback": {
+      "post": {
+        "operationId": "rollbackPreview",
+        "summary": "Point the preview at an earlier deployment",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "deploy",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deploymentId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The preview after rollback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 22,
+                      "maxLength": 22
+                    },
+                    "name": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+                    },
+                    "visibility": {
+                      "type": "string",
+                      "enum": [
+                        "unlisted",
+                        "private",
+                        "public"
+                      ]
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "pinned": {
+                      "type": "boolean"
+                    },
+                    "currentDeploymentId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdBy": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "deployment": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "previewId": {
+                          "type": "string"
+                        },
+                        "entry": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "bytes": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "fileCount": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        },
+                        "uploaded": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "ready"
+                          ]
+                        },
+                        "createdBy": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "previewId",
+                        "entry",
+                        "message",
+                        "bytes",
+                        "fileCount",
+                        "uploaded",
+                        "status",
+                        "createdBy",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "visibility",
+                    "expiresAt",
+                    "pinned",
+                    "currentDeploymentId",
+                    "createdBy",
+                    "createdAt",
+                    "updatedAt",
+                    "url",
+                    "deployment"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/previews/{name}/deployments": {
+      "post": {
+        "operationId": "planDeployment",
+        "summary": "Manifest step: declare files by sha256 and get the blobs still missing",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "deploy",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "hash": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "size": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "hash",
+                        "size"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "entry": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "unlisted",
+                      "private",
+                      "public"
+                    ]
+                  },
+                  "ttl": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 87600
+                  }
+                },
+                "required": [
+                  "files"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Plan with missing blob hashes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deploymentId": {
+                      "type": "string"
+                    },
+                    "missing": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  },
+                  "required": [
+                    "deploymentId",
+                    "missing"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/previews/{name}/deployments/{id}/finalize": {
+      "post": {
+        "operationId": "finalizeDeployment",
+        "summary": "Verify blobs and promote the deployment atomically",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "deploy",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preview updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "deploymentUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "deploymentId": {
+                      "type": "string"
+                    },
+                    "created": {
+                      "type": "boolean"
+                    },
+                    "files": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "uploaded": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "ROOT_RELATIVE_URL",
+                              "NO_ENTRY_HTML",
+                              "LOCALHOST_URL",
+                              "MIXED_CONTENT",
+                              "LARGE_FILE"
+                            ]
+                          },
+                          "file": {
+                            "type": "string"
+                          },
+                          "fix": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "fix"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "deploymentUrl",
+                    "name",
+                    "deploymentId",
+                    "created",
+                    "files",
+                    "bytes",
+                    "uploaded",
+                    "expiresAt",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Preview created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "deploymentUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "deploymentId": {
+                      "type": "string"
+                    },
+                    "created": {
+                      "type": "boolean"
+                    },
+                    "files": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "uploaded": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "ROOT_RELATIVE_URL",
+                              "NO_ENTRY_HTML",
+                              "LOCALHOST_URL",
+                              "MIXED_CONTENT",
+                              "LARGE_FILE"
+                            ]
+                          },
+                          "file": {
+                            "type": "string"
+                          },
+                          "fix": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "fix"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "deploymentUrl",
+                    "name",
+                    "deploymentId",
+                    "created",
+                    "files",
+                    "bytes",
+                    "uploaded",
+                    "expiresAt",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/previews/{name}/files": {
+      "get": {
+        "operationId": "listFiles",
+        "summary": "Manifest of a deployment",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+            }
+          },
+          {
+            "name": "deployment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Files of the deployment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deploymentId": {
+                      "type": "string"
+                    },
+                    "entry": {
+                      "type": "string"
+                    },
+                    "files": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "hash": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "size": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "contentType": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "hash",
+                          "size",
+                          "contentType"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "deploymentId",
+                    "entry",
+                    "files"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/previews/{name}/files/{path}": {
+      "get": {
+        "operationId": "readFile",
+        "summary": "Read one file (served as text/plain or octet-stream)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "deployment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File bytes"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/blobs/{sha256}": {
+      "put": {
+        "operationId": "putBlob",
+        "summary": "Upload a blob by content hash",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "deploy",
+        "parameters": [
+          {
+            "name": "sha256",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "The exact bytes whose SHA-256 is in the path"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "hash": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "stored": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "hash",
+                    "stored"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/keys": {
+      "post": {
+        "operationId": "createKey",
+        "summary": "Create an API key (token shown once)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "admin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "deploy",
+                        "read",
+                        "admin"
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "label",
+                  "scopes"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The key with its secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "scopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "deploy",
+                          "read",
+                          "admin"
+                        ]
+                      },
+                      "minItems": 1
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "lastUsedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "key": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label",
+                    "scopes",
+                    "createdAt",
+                    "lastUsedAt",
+                    "key"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listKeys",
+        "summary": "List API keys (no secrets)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "admin",
+        "responses": {
+          "200": {
+            "description": "All keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "scopes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "deploy",
+                                "read",
+                                "admin"
+                              ]
+                            },
+                            "minItems": 1
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "lastUsedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "label",
+                          "scopes",
+                          "createdAt",
+                          "lastUsedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "keys"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/keys/{id}": {
+      "delete": {
+        "operationId": "revokeKey",
+        "summary": "Revoke an API key",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/usage": {
+      "get": {
+        "operationId": "getUsage",
+        "summary": "Totals, per-key usage and quota headroom",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "admin",
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totals": {
+                      "type": "object",
+                      "properties": {
+                        "previews": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "deployments": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "storedBytes": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "previews",
+                        "deployments",
+                        "storedBytes"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "quota": {
+                      "type": "object",
+                      "properties": {
+                        "maxDeployBytes": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        },
+                        "maxDeployFiles": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        },
+                        "maxTotalBytes": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        },
+                        "keepDeployments": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        },
+                        "remainingBytes": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "maxDeployBytes",
+                        "maxDeployFiles",
+                        "maxTotalBytes",
+                        "keepDeployments",
+                        "remainingBytes"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "scopes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "deploy",
+                                "read",
+                                "admin"
+                              ]
+                            }
+                          },
+                          "lastUsedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "deployments": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "bytes": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "label",
+                          "scopes",
+                          "lastUsedAt",
+                          "deployments",
+                          "bytes"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "totals",
+                    "quota",
+                    "keys"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key (hp_…)"
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Error with a stable code and a fix hint",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "fix": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "UNAUTHORIZED: missing or invalid API key",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "fix": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "INSUFFICIENT_SCOPE: the key lacks the required scope",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "fix": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "RATE_LIMITED: wait Retry-After seconds",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "fix": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      }
+    }
+  }
+}
