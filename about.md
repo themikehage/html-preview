@@ -7,7 +7,7 @@ html-preview es un servidor autohospedado y agent-first para desplegar y gestion
 
 Users are AI agents (Claude Code, Codex, Spaces agents, any MCP client) and the person who runs the instance. Core entities: **Preview** (named, mutable alias), **Deployment** (immutable manifest of files), **Blob** (content-addressed file), **API key**, **Share link**. Full product design: [docs/design.md](./docs/design.md).
 
-> **State**: greenfield. Only protocol files and plans exist; no code yet. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
+> **State**: H1 done (foundation: config, host dispatch, `/healthz`, typed errors, `verify`, CI). Domain, storage and API land in H2+. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
 
 ---
 
@@ -57,6 +57,7 @@ docs/design.md     product design (source of truth)
 - Deployments and blobs are immutable; rollback only moves a pointer. Never mutate a blob in place.
 - Tests use a temporary `DATA_DIR` per test file, never the dev data directory.
 - `DATA_DIR` must be a persistent volume in production.
+- Dev defaults: `APP_ORIGIN=http://localhost:3000`, `CONTENT_ORIGIN=http://127.0.0.1:3000`; if the port is taken set all three (`PORT`, both origins). Requests are routed by `Host` header; unknown host → 421.
 
 ---
 
@@ -80,10 +81,10 @@ docs/design.md     product design (source of truth)
 ## Project Commands
 
 ### Quality gate (mandatory)
-- `bun run verify` — typecheck + `biome check` + `check:size` (no file > 300 lines) + `bun test` + build. Created in H1.
+- `bun run verify` — typecheck + `biome check` + `check:size` (no file > 300 lines) + `bun test` + build. `check:license` requires `// SPDX-License-Identifier: MIT` as first line of every `.ts`; keep a blank line after it (Biome import sorting).
 
 ### CI (mandatory)
-- Workflow: `.github/workflows/ci.yml` — on every push and PR: checkout → setup Bun → `bun install --frozen-lockfile` → `bun run verify`. Created in H1.
+- Workflow: `.github/workflows/ci.yml` — on every push and PR: checkout → setup Bun → `bun install --frozen-lockfile` → `bun run verify`.
 
 ### Behavior check (optional)
 - `curl` against a local server (deploy, then fetch the returned URL). `/TEST` with Playwright for the dashboard from H7.

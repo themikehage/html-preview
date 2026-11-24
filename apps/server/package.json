@@ -1,0 +1,12 @@
+{
+  "name": "@html-preview/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "@html-preview/shared": "workspace:*",
+    "hono": "^4.6.0",
+    "zod": "^3.23.8"
+  }
+}

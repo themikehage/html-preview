@@ -8,7 +8,6 @@ Keep it lean: every entry is **one line + a link to its plan** (archived in `pla
 
 ## Backlog
 
-- [ ] **H1 — Foundation**: workspaces, Hono server, `/healthz`, env config, Biome, `verify`, CI → [plan](./plans/H1-foundation.md)
 - [ ] **H2 — Storage core**: ports, SQLite schema, blob store, deploy/rollback/delete services → [plan](./plans/H2-storage-core.md)
 - [ ] **H3 — Deploy API and serving**: `/v1` deploy (one-shot + manifest), API keys, content server in path mode → [plan](./plans/H3-deploy-api-and-serving.md)
 - [ ] **H4 — Limits and lifecycle**: quotas, scopes, rate limit, TTL reaper, GC, warnings → [plan](./plans/H4-limits-and-lifecycle.md)
@@ -28,4 +27,4 @@ Keep it lean: every entry is **one line + a link to its plan** (archived in `pla
 
 ## Completed
 
-*(one line + link to `plans/completed/H<N>-<slug>.md` when acceptance criteria pass)*
+- [x] **H1 — Foundation**: workspaces, Hono server, `/healthz`, env config, Biome, `verify`, CI → [plan](./plans/completed/H1-foundation.md)
