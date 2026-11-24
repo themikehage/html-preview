@@ -7,7 +7,7 @@ html-preview es un servidor autohospedado y agent-first para desplegar y gestion
 
 Users are AI agents (Claude Code, Codex, Spaces agents, any MCP client) and the person who runs the instance. Core entities: **Preview** (named, mutable alias), **Deployment** (immutable manifest of files), **Blob** (content-addressed file), **API key**, **Share link**. Full product design: [docs/design.md](./docs/design.md).
 
-> **State**: H1 done (foundation: config, host dispatch, `/healthz`, typed errors, `verify`, CI). Domain, storage and API land in H2+. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
+> **State**: H1 + H2 done (foundation; ports, SQLite, blob store, deploy/rollback/delete domain services, no HTTP yet). API and serving land in H3+. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
 
 ---
 
@@ -56,7 +56,10 @@ docs/design.md     product design (source of truth)
 - Path mode has no `localStorage`, cookies or IndexedDB inside previews, and root-relative URLs built in JS/CSS break; deploys must use relative asset URLs. Deploy responses warn about it.
 - Deployments and blobs are immutable; rollback only moves a pointer. Never mutate a blob in place.
 - Tests use a temporary `DATA_DIR` per test file, never the dev data directory.
-- `DATA_DIR` must be a persistent volume in production.
+- `DATA_DIR` must be a persistent volume in production. It holds `html-preview.sqlite` (schema versioned with `PRAGMA user_version`, migrations in `core/infra/sqlite/migrations.ts`: append, never edit) and `blobs/`.
+- Deploy is two steps: `planDeployment` persists the preview and a `pending` deployment and returns missing blob hashes; `finalizeDeployment` verifies blobs and atomically promotes it. Repos and `Transactor` are synchronous (bun:sqlite); blob I/O is async and happens outside transactions.
+- Manifest paths are normalized (`./`, `//` collapsed) and rejected if absolute, `..`, backslash, NUL or hidden. Domain error codes are UPPER_SNAKE (`BLOBS_MISSING`, `INVALID_PATH`…); H1 generic codes are still lowercase.
+- Tests: `useTestContext()` from `src/test-support/context.ts` gives a temp `DATA_DIR`, fake clock and cleanup.
 - Dev defaults: `APP_ORIGIN=http://localhost:3000`, `CONTENT_ORIGIN=http://127.0.0.1:3000`; if the port is taken set all three (`PORT`, both origins). Requests are routed by `Host` header; unknown host → 421.
 
 ---

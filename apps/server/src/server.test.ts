@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 import { ErrorBody, Health } from "@html-preview/shared";
-import { buildFetchHandler, loadConfig } from "./server";
+import { buildFetchHandler } from "./server";
+import { useTestContext } from "./test-support/context";
 
-const handler = buildFetchHandler(loadConfig({}), "9.9.9");
+const make = useTestContext();
+let handler: (request: Request) => Promise<Response>;
+
+beforeEach(() => {
+  handler = buildFetchHandler(make().ctx);
+});
 
 function get(host: string, path: string): Promise<Response> {
   return Promise.resolve(handler(new Request(`http://${host}${path}`, { headers: { host } })));
@@ -14,7 +20,7 @@ describe("host dispatch", () => {
   test("GET /healthz answers on the app host", async () => {
     const res = await get("localhost:3000", "/healthz");
     expect(res.status).toBe(200);
-    expect(Health.parse(await res.json())).toEqual({ status: "ok", version: "9.9.9" });
+    expect(Health.parse(await res.json())).toEqual({ status: "ok", version: "test" });
   });
 
   test("GET /healthz answers on the content host", async () => {

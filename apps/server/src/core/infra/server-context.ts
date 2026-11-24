@@ -1,12 +1,45 @@
 // SPDX-License-Identifier: MIT
 
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+import type { Clock } from "../ports/clock.port";
+import type { DomainDeps } from "../ports/deps";
+import type { Ids } from "../ports/ids.port";
 import type { Config } from "./config";
+import { FsBlobStore } from "./fs-blob-store";
+import { openDatabase } from "./sqlite/db";
+import { SqliteDeploymentRepo } from "./sqlite/deployment-repo";
+import { SqlitePreviewRepo } from "./sqlite/preview-repo";
+import { SqliteTransactor } from "./sqlite/transactor";
+import { randomIds, systemClock } from "./system";
 
 export interface ServerContext {
   readonly config: Config;
   readonly version: string;
+  readonly deps: DomainDeps;
+  close(): void;
 }
 
-export function createServerContext(config: Config, version: string): ServerContext {
-  return { config, version };
+export interface ContextOverrides {
+  clock?: Clock;
+  ids?: Ids;
+}
+
+export function createServerContext(
+  config: Config,
+  version: string,
+  overrides: ContextOverrides = {},
+): ServerContext {
+  mkdirSync(config.DATA_DIR, { recursive: true });
+  const db = openDatabase(join(config.DATA_DIR, "html-preview.sqlite"));
+  const deps: DomainDeps = {
+    previews: new SqlitePreviewRepo(db),
+    deployments: new SqliteDeploymentRepo(db),
+    blobs: new FsBlobStore(join(config.DATA_DIR, "blobs")),
+    clock: overrides.clock ?? systemClock,
+    ids: overrides.ids ?? randomIds,
+    tx: new SqliteTransactor(db),
+    defaultTtlHours: config.DEFAULT_TTL_HOURS,
+  };
+  return { config, version, deps, close: () => db.close() };
 }
