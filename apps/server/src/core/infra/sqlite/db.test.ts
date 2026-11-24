@@ -19,7 +19,7 @@ describe("openDatabase", () => {
       )
       .all()
       .map((row) => row.name);
-    expect(tables).toEqual(["deployment_files", "deployments", "previews"]);
+    expect(tables).toEqual(["api_keys", "deployment_files", "deployments", "previews"]);
     expect(db.query<{ journal_mode: string }, []>("PRAGMA journal_mode").get()?.journal_mode).toBe(
       "wal",
     );

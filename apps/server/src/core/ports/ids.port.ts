@@ -3,4 +3,6 @@
 export interface Ids {
   previewId(): string;
   deploymentId(): string;
+  apiKeyId(): string;
+  secret(): string;
 }

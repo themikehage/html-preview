@@ -1,9 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-import { type Deployment, ManifestInput, type Preview, PreviewName } from "@html-preview/shared";
+import {
+  type Deployment,
+  ManifestInput,
+  type Preview,
+  PreviewName,
+  type Visibility,
+} from "@html-preview/shared";
 import { BadRequest, Conflict, NotFound } from "../core/infra/errors";
 import type { DomainDeps } from "../core/ports/deps";
 import { normalizeManifest, resolveEntry } from "./manifest-path";
+import { requirePreview } from "./preview-admin";
+import { assertVisibilityAllowed, defaultVisibility, expiryFrom } from "./visibility";
 
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_REPORTED_BLOBS = 20;
@@ -13,6 +21,8 @@ export interface PlanInput {
   files: unknown;
   entry?: string;
   message?: string;
+  visibility?: Visibility;
+  ttlHours?: number;
   createdBy: string;
 }
 
@@ -78,6 +88,7 @@ export async function planDeployment(deps: DomainDeps, input: PlanInput): Promis
   if (input.createdBy.trim() === "") {
     throw new BadRequest("createdBy is required", "Identify the caller", "INVALID_ACTOR");
   }
+  if (input.visibility) assertVisibilityAllowed(input.visibility, deps.maxVisibility);
   const missing = await missingBlobs(deps, uniqueHashes(manifest));
   const now = deps.clock.now();
   const createdAt = now.toISOString();
@@ -90,17 +101,24 @@ export async function planDeployment(deps: DomainDeps, input: PlanInput): Promis
       deps.previews.create({
         id,
         name,
-        visibility: "unlisted",
-        expiresAt:
-          deps.defaultTtlHours > 0
-            ? new Date(now.getTime() + deps.defaultTtlHours * 3_600_000).toISOString()
-            : null,
+        visibility: input.visibility ?? defaultVisibility(deps.maxVisibility),
+        expiresAt: expiryFrom(now, input.ttlHours ?? deps.defaultTtlHours),
         pinned: false,
         currentDeploymentId: null,
         createdBy: input.createdBy,
         createdAt,
         updatedAt: createdAt,
       });
+    }
+    if (existing && (input.visibility !== undefined || input.ttlHours !== undefined)) {
+      deps.previews.update(
+        id,
+        {
+          ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
+          ...(input.ttlHours !== undefined ? { expiresAt: expiryFrom(now, input.ttlHours) } : {}),
+        },
+        createdAt,
+      );
     }
     deps.deployments.create({
       id: deploymentId,
@@ -109,6 +127,7 @@ export async function planDeployment(deps: DomainDeps, input: PlanInput): Promis
       message,
       bytes: Object.values(manifest).reduce((total, file) => total + file.size, 0),
       fileCount: Object.keys(manifest).length,
+      uploaded: missing.length,
       status: "pending",
       createdBy: input.createdBy,
       createdAt,

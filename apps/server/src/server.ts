@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-import { createContentApp } from "./content/app";
+import { createContentApp } from "./content/router";
 import { toErrorResponse } from "./core/infra/error-handler";
 import { dispatchByHost } from "./core/infra/host-dispatch";
 import type { ServerContext } from "./core/infra/server-context";

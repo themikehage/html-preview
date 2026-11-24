@@ -37,6 +37,17 @@ const MIGRATIONS: readonly string[] = [
   );
   CREATE INDEX deployment_files_hash_idx ON deployment_files (hash);
   `,
+  `
+  ALTER TABLE deployments ADD COLUMN uploaded INTEGER NOT NULL DEFAULT 0;
+  CREATE TABLE api_keys (
+    id TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
+    hash TEXT NOT NULL UNIQUE,
+    scopes TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    last_used_at TEXT
+  );
+  `,
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS.length;

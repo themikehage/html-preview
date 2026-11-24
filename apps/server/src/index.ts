@@ -3,12 +3,16 @@
 import pkg from "../package.json";
 import { ConfigError, loadConfig } from "./core/infra/config";
 import { createServerContext } from "./core/infra/server-context";
+import { bootstrapAdminKey } from "./domain/api-keys";
 import { buildFetchHandler } from "./server";
 
 function main(): void {
   try {
     const config = loadConfig(process.env);
     const ctx = createServerContext(config, pkg.version);
+    const bootstrapKey = bootstrapAdminKey(ctx.deps);
+    if (bootstrapKey)
+      console.log(`Bootstrap admin API key (shown once, store it now): ${bootstrapKey}`);
     const server = Bun.serve({ port: config.PORT, fetch: buildFetchHandler(ctx) });
     const shutdown = (): void => {
       server.stop();

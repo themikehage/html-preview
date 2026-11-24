@@ -12,7 +12,12 @@ async function* chunksOf(source: BlobSource): AsyncGenerator<Uint8Array> {
     yield source;
     return;
   }
-  yield* source;
+  const reader = source.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return;
+    yield value;
+  }
 }
 
 export class FsBlobStore implements BlobStore {
@@ -34,6 +39,10 @@ export class FsBlobStore implements BlobStore {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
       throw error;
     }
+  }
+
+  async open(hash: string): Promise<Blob | null> {
+    return (await this.has(hash)) ? Bun.file(this.pathFor(hash)) : null;
   }
 
   async put(source: BlobSource, expectedHash: string): Promise<void> {

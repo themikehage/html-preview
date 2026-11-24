@@ -28,23 +28,24 @@ describe("host dispatch", () => {
     expect(res.status).toBe(200);
   });
 
-  test("content host answers 404 for anything else", async () => {
+  test("content host answers a plain 404 for unknown previews", async () => {
     const res = await get("127.0.0.1:3000", "/abc/index.html");
     expect(res.status).toBe(404);
-    expect(ErrorBody.parse(await res.json()).error.code).toBe("not_found");
+    expect(res.headers.get("content-type")).toContain("text/plain");
+    expect(await res.text()).toBe("Not found");
   });
 
   test("app host answers typed 404", async () => {
     const res = await get("localhost:3000", "/nope");
     expect(res.status).toBe(404);
-    expect(ErrorBody.parse(await res.json()).error.code).toBe("not_found");
+    expect(ErrorBody.parse(await res.json()).error.code).toBe("NOT_FOUND");
   });
 
   test("unknown host answers 421 with a fix hint", async () => {
     const res = await get("evil.test", "/healthz");
     expect(res.status).toBe(421);
     const body = ErrorBody.parse(await res.json());
-    expect(body.error.code).toBe("unknown_host");
+    expect(body.error.code).toBe("UNKNOWN_HOST");
     expect(body.error.fix).toBeDefined();
   });
 });

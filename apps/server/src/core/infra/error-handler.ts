@@ -1,11 +1,20 @@
 // SPDX-License-Identifier: MIT
 
 import type { ErrorBody } from "@html-preview/shared";
-import { AppError, InternalError } from "./errors";
+import { HTTPException } from "hono/http-exception";
+import { AppError, BadRequest, InternalError } from "./errors";
+
+function classify(error: unknown): AppError {
+  if (error instanceof AppError) return error;
+  if (error instanceof HTTPException && error.status === 400) {
+    return new BadRequest(error.message, "Check the request body syntax");
+  }
+  console.error(error);
+  return new InternalError();
+}
 
 export function toErrorResponse(error: unknown): Response {
-  if (!(error instanceof AppError)) console.error(error);
-  const appError = error instanceof AppError ? error : new InternalError();
+  const appError = classify(error);
   const body: ErrorBody = {
     error: {
       code: appError.code,

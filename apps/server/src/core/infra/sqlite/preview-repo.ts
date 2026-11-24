@@ -2,7 +2,7 @@
 
 import type { Database } from "bun:sqlite";
 import type { Preview, Visibility } from "@html-preview/shared";
-import type { PreviewRepo } from "../../ports/preview-repo.port";
+import type { PreviewListQuery, PreviewPatch, PreviewRepo } from "../../ports/preview-repo.port";
 
 interface PreviewRow {
   id: string;
@@ -43,6 +43,54 @@ export class SqlitePreviewRepo implements PreviewRepo {
   findById(id: string): Preview | null {
     const row = this.db.query<PreviewRow, [string]>("SELECT * FROM previews WHERE id = ?").get(id);
     return row ? toPreview(row) : null;
+  }
+
+  list(query: PreviewListQuery): Preview[] {
+    const where: string[] = [];
+    const params: (string | number)[] = [];
+    if (query.q) {
+      where.push("name LIKE ? ESCAPE '\\'");
+      params.push(`%${query.q.replace(/[\\%_]/g, "\\$&")}%`);
+    }
+    if (query.createdBy) {
+      where.push("created_by = ?");
+      params.push(query.createdBy);
+    }
+    if (query.after) {
+      where.push("name > ?");
+      params.push(query.after);
+    }
+    const clause = where.length > 0 ? `WHERE ${where.join(" AND ")}` : "";
+    return this.db
+      .query<PreviewRow, (string | number)[]>(
+        `SELECT * FROM previews ${clause} ORDER BY name LIMIT ?`,
+      )
+      .all(...params, query.limit)
+      .map(toPreview);
+  }
+
+  update(id: string, patch: PreviewPatch, updatedAt: string): void {
+    const sets: string[] = [];
+    const params: (string | number | null)[] = [];
+    if (patch.name !== undefined) {
+      sets.push("name = ?");
+      params.push(patch.name);
+    }
+    if (patch.visibility !== undefined) {
+      sets.push("visibility = ?");
+      params.push(patch.visibility);
+    }
+    if (patch.expiresAt !== undefined) {
+      sets.push("expires_at = ?");
+      params.push(patch.expiresAt);
+    }
+    if (patch.pinned !== undefined) {
+      sets.push("pinned = ?");
+      params.push(patch.pinned ? 1 : 0);
+    }
+    sets.push("updated_at = ?");
+    params.push(updatedAt, id);
+    this.db.query(`UPDATE previews SET ${sets.join(", ")} WHERE id = ?`).run(...params);
   }
 
   create(preview: Preview): void {

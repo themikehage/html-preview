@@ -13,4 +13,6 @@ function token(): string {
 export const randomIds: Ids = {
   previewId: token,
   deploymentId: () => `d_${token()}`,
+  apiKeyId: () => `k_${token()}`,
+  secret: () => `hp_${randomBytes(32).toString("base64url")}`,
 };

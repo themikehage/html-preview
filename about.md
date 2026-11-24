@@ -7,7 +7,7 @@ html-preview es un servidor autohospedado y agent-first para desplegar y gestion
 
 Users are AI agents (Claude Code, Codex, Spaces agents, any MCP client) and the person who runs the instance. Core entities: **Preview** (named, mutable alias), **Deployment** (immutable manifest of files), **Blob** (content-addressed file), **API key**, **Share link**. Full product design: [docs/design.md](./docs/design.md).
 
-> **State**: H1 + H2 done (foundation; ports, SQLite, blob store, deploy/rollback/delete domain services, no HTTP yet). API and serving land in H3+. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
+> **State**: H1–H3 done: foundation, storage, `/v1` deploy/manage API with API keys, and the path-mode content server. Limits/reaper (H4), MCP/docs (H5), CLI (H6), dashboard/private/share (H7) are next. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
 
 ---
 
@@ -42,7 +42,7 @@ docs/design.md     product design (source of truth)
 | Layer | Technology |
 |---|---|
 | **Runtime** | Bun (server and tests), Node ≥ 20 compatible CLI |
-| **Framework** | Hono + `@hono/zod-validator`, `@modelcontextprotocol/sdk` |
+| **Framework** | Hono + `@hono/zod-validator`, `@modelcontextprotocol/sdk` (H5), `fflate` (zip / gzip extraction; tar parsed in `domain/archive.ts`) |
 | **Database** | `bun:sqlite` (WAL) + content-addressed blobs under `DATA_DIR/blobs` |
 | **Lint/format** | Biome |
 | **Testing** | `bun test` |
@@ -59,6 +59,12 @@ docs/design.md     product design (source of truth)
 - `DATA_DIR` must be a persistent volume in production. It holds `html-preview.sqlite` (schema versioned with `PRAGMA user_version`, migrations in `core/infra/sqlite/migrations.ts`: append, never edit) and `blobs/`.
 - Deploy is two steps: `planDeployment` persists the preview and a `pending` deployment and returns missing blob hashes; `finalizeDeployment` verifies blobs and atomically promotes it. Repos and `Transactor` are synchronous (bun:sqlite); blob I/O is async and happens outside transactions.
 - Manifest paths are normalized (`./`, `//` collapsed) and rejected if absolute, `..`, backslash, NUL or hidden. Domain error codes are UPPER_SNAKE (`BLOBS_MISSING`, `INVALID_PATH`…); H1 generic codes are still lowercase.
+- API keys (`hp_…`, only the SHA-256 is stored) are created by `bootstrapAdminKey` on first boot (printed once to stdout). Any valid key may do anything in H3; scopes are stored but enforced in H4. All `/v1/*` needs `Authorization: Bearer`.
+- One-shot deploy extracts archives in memory (`domain/archive.ts`): a single top folder is stripped, `__MACOSX`/`.DS_Store` skipped, links and unsafe/hidden paths rejected. `MAX_DEPLOY_BYTES`/`MAX_DEPLOY_FILES` already cap bodies and extraction.
+- Visibility ceiling order: `private` < `unlisted` < `public`; `MAX_VISIBILITY` is the most open allowed. `private` previews are not served at all until H7 (share links). `/<name>/` aliases serve `public` only. Expired previews (not `pinned`) 404.
+- Content responses always carry the sandbox CSP (no `allow-same-origin`) plus `Access-Control-Allow-Origin: *` (needed for module scripts from the opaque origin). HTML gets root-relative `src|href|action|poster` rewritten under `/<id>` or `/<id>@<deploymentId>`; HTML is not range-served.
+- Bun 1.3.14: `HTMLRewriter` on a file-backed `Response` hangs under `Bun.serve` (buffer first) and `for await` over a request `ReadableStream` throws (use `getReader()`). In-process `fetch` tests do not catch these; keep real-socket tests (`Bun.serve({ port: 0 })`).
+- `GET /v1/previews/:name/files/*` serves untrusted files from the API origin as `text/plain`/`octet-stream` with `CSP: sandbox` + `nosniff`; never relax that.
 - Tests: `useTestContext()` from `src/test-support/context.ts` gives a temp `DATA_DIR`, fake clock and cleanup.
 - Dev defaults: `APP_ORIGIN=http://localhost:3000`, `CONTENT_ORIGIN=http://127.0.0.1:3000`; if the port is taken set all three (`PORT`, both origins). Requests are routed by `Host` header; unknown host → 421.
 

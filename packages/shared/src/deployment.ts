@@ -13,6 +13,7 @@ export const DeploymentSummary = z.object({
   message: z.string().nullable(),
   bytes: z.number().int().nonnegative(),
   fileCount: z.number().int().positive(),
+  uploaded: z.number().int().nonnegative(),
   status: DeploymentStatus,
   createdBy: z.string().min(1),
   createdAt: z.string().datetime(),

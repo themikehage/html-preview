@@ -3,6 +3,7 @@
 import type { DeploymentSummary, Preview } from "@html-preview/shared";
 import { Conflict, NotFound } from "../core/infra/errors";
 import type { DomainDeps } from "../core/ports/deps";
+import { requirePreview } from "./preview-admin";
 
 export interface RollbackInput {
   name: string;
@@ -15,10 +16,7 @@ export interface RollbackResult {
 }
 
 export function rollback(deps: DomainDeps, input: RollbackInput): RollbackResult {
-  const preview = deps.previews.findByName(input.name);
-  if (!preview) {
-    throw new NotFound(`Preview "${input.name}" not found`, undefined, "PREVIEW_NOT_FOUND");
-  }
+  const preview = requirePreview(deps, input.name);
   if (!preview.currentDeploymentId) {
     throw new Conflict("Preview has no deployment yet", "Deploy first", "NO_DEPLOYMENT");
   }
