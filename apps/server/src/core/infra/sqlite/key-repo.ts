@@ -40,6 +40,22 @@ export class SqliteKeyRepo implements KeyRepo {
     return row ? toKey(row) : null;
   }
 
+  findById(id: string): StoredApiKey | null {
+    const row = this.db.query<KeyRow, [string]>("SELECT * FROM api_keys WHERE id = ?").get(id);
+    return row ? toKey(row) : null;
+  }
+
+  list(): StoredApiKey[] {
+    return this.db
+      .query<KeyRow, []>("SELECT * FROM api_keys ORDER BY created_at, rowid")
+      .all()
+      .map(toKey);
+  }
+
+  delete(id: string): void {
+    this.db.query("DELETE FROM api_keys WHERE id = ?").run(id);
+  }
+
   touch(id: string, at: string): void {
     this.db.query("UPDATE api_keys SET last_used_at = ? WHERE id = ?").run(at, id);
   }

@@ -20,11 +20,18 @@ function invalidArchive(reason: string): BadRequest {
   );
 }
 
-function tooLarge(limits: ArchiveLimits): PayloadTooLarge {
-  return new PayloadTooLarge(
-    `Archive exceeds ${limits.maxBytes} bytes or ${limits.maxFiles} files once extracted`,
-    "Deploy fewer or smaller files, or raise MAX_DEPLOY_BYTES / MAX_DEPLOY_FILES",
-  );
+function tooLarge(limits: ArchiveLimits, reason: "bytes" | "files" = "bytes"): PayloadTooLarge {
+  return reason === "files"
+    ? new PayloadTooLarge(
+        `Archive has more than ${limits.maxFiles} files`,
+        "Deploy fewer files (bundle assets) or ask the operator to raise MAX_DEPLOY_FILES",
+        "TOO_MANY_FILES",
+      )
+    : new PayloadTooLarge(
+        `Archive exceeds ${limits.maxBytes} bytes once extracted`,
+        "Deploy fewer or smaller files or ask the operator to raise MAX_DEPLOY_BYTES",
+        "DEPLOY_TOO_LARGE",
+      );
 }
 
 function isJunk(path: string): boolean {
@@ -49,7 +56,8 @@ export function extractZip(data: Uint8Array, limits: ArchiveLimits): DeployFile[
         if (file.name.endsWith("/") || isJunk(file.name)) return false;
         count += 1;
         declared += file.originalSize;
-        if (count > limits.maxFiles || declared > limits.maxBytes) throw tooLarge(limits);
+        if (count > limits.maxFiles) throw tooLarge(limits, "files");
+        if (declared > limits.maxBytes) throw tooLarge(limits);
         return true;
       },
     });
@@ -137,7 +145,8 @@ export function extractTarGz(data: Uint8Array, limits: ArchiveLimits): DeployFil
       longName = undefined;
       if (isJunk(path)) continue;
       total += size;
-      if (files.length + 1 > limits.maxFiles || total > limits.maxBytes) throw tooLarge(limits);
+      if (files.length + 1 > limits.maxFiles) throw tooLarge(limits, "files");
+      if (total > limits.maxBytes) throw tooLarge(limits);
       files.push({ path, content: content.slice() });
     } else if (type === "1" || type === "2") {
       throw invalidArchive("links are not allowed");

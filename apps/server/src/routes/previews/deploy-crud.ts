@@ -24,7 +24,8 @@ export function deployCrud(ctx: ServerContext): Hono<AppEnv> {
         toErrorResponse(
           new PayloadTooLarge(
             `Body exceeds ${config.MAX_DEPLOY_BYTES} bytes`,
-            "Deploy fewer or smaller files, or raise MAX_DEPLOY_BYTES",
+            "Deploy fewer or smaller files, or ask the operator to raise MAX_DEPLOY_BYTES",
+            "DEPLOY_TOO_LARGE",
           ),
         ),
     }),

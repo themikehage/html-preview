@@ -22,5 +22,5 @@ export function toErrorResponse(error: unknown): Response {
       ...(appError.fix ? { fix: appError.fix } : {}),
     },
   };
-  return Response.json(body, { status: appError.status });
+  return Response.json(body, { status: appError.status, headers: appError.headers });
 }

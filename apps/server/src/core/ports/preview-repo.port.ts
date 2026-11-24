@@ -24,4 +24,9 @@ export interface PreviewRepo {
   update(id: string, patch: PreviewPatch, updatedAt: string): void;
   setCurrentDeployment(id: string, deploymentId: string, updatedAt: string): void;
   delete(id: string): void;
+  count(): number;
+  /** Non-pinned previews whose expiry is at or before `now` (ISO). */
+  listExpired(now: string): Preview[];
+  /** Previews that never got a live deployment and have none left, created before `before` (ISO). */
+  deleteAbandoned(before: string): number;
 }

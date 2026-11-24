@@ -1,13 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { z } from "zod";
-
-export const DeployWarning = z.object({
-  code: z.string(),
-  file: z.string().optional(),
-  fix: z.string(),
-});
-export type DeployWarning = z.infer<typeof DeployWarning>;
+import { DeployWarning } from "./warnings";
 
 export const DeployResponse = z.object({
   url: z.string().url(),

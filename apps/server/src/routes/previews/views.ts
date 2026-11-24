@@ -32,7 +32,7 @@ export function toDeploymentView(
 }
 
 export function toDeployResponse(config: Config, result: FinalizeResult): DeployResponse {
-  const { preview, deployment, created } = result;
+  const { preview, deployment, created, warnings } = result;
   return {
     url: previewUrl(config, preview.id),
     deploymentUrl: deploymentUrl(config, preview.id, deployment.id),
@@ -43,6 +43,6 @@ export function toDeployResponse(config: Config, result: FinalizeResult): Deploy
     bytes: deployment.bytes,
     uploaded: deployment.uploaded,
     expiresAt: preview.expiresAt,
-    warnings: [],
+    warnings,
   };
 }

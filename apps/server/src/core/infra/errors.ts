@@ -6,6 +6,7 @@ export class AppError extends Error {
     readonly code: string,
     message: string,
     readonly fix?: string,
+    readonly headers: Record<string, string> = {},
   ) {
     super(message);
     this.name = new.target.name;
@@ -61,8 +62,19 @@ export class MisdirectedRequest extends AppError {
 }
 
 export class TooManyRequests extends AppError {
-  constructor(message = "Too many requests", fix?: string, code = "RATE_LIMITED") {
-    super(429, code, message, fix);
+  constructor(retryAfterSeconds: number, message = "Too many requests", fix?: string) {
+    super(429, "RATE_LIMITED", message, fix, { "Retry-After": String(retryAfterSeconds) });
+  }
+}
+
+export class InsufficientScope extends AppError {
+  constructor(required: string) {
+    super(
+      403,
+      "INSUFFICIENT_SCOPE",
+      `This API key lacks the "${required}" scope`,
+      `Use a key with the "${required}" (or "admin") scope; an admin can create one with POST /v1/keys`,
+    );
   }
 }
 

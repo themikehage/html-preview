@@ -20,6 +20,8 @@ const schema = z.object({
   MAX_DEPLOY_BYTES: z.coerce.number().int().positive().default(52_428_800),
   MAX_DEPLOY_FILES: z.coerce.number().int().positive().default(2000),
   MAX_TOTAL_BYTES: z.coerce.number().int().positive().default(5_368_709_120),
+  KEEP_DEPLOYMENTS: z.coerce.number().int().positive().default(10),
+  RATE_LIMIT_PER_MIN: z.coerce.number().int().min(0).default(120),
   FRAME_ANCESTORS: z
     .string()
     .default("")

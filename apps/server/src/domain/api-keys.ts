@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import type { ApiKey, Scope } from "@html-preview/shared";
-import { Unauthorized } from "../core/infra/errors";
+import { Conflict, NotFound, Unauthorized } from "../core/infra/errors";
 import type { DomainDeps } from "../core/ports/deps";
 import type { StoredApiKey } from "../core/ports/key-repo.port";
 import { sha256Hex } from "./hash";
@@ -29,6 +29,31 @@ export function createApiKey(deps: DomainDeps, label: string, scopes: Scope[]): 
   };
   deps.keys.create(stored);
   return { key, record: toPublic(stored) };
+}
+
+export function hasScope(key: ApiKey, scope: Scope): boolean {
+  return key.scopes.includes(scope) || key.scopes.includes("admin");
+}
+
+export function listApiKeys(deps: DomainDeps): ApiKey[] {
+  return deps.keys.list().map(toPublic);
+}
+
+export function revokeApiKey(deps: DomainDeps, id: string): void {
+  const target = deps.keys.findById(id);
+  if (!target)
+    throw new NotFound(`API key "${id}" not found`, "List keys with GET /v1/keys", "KEY_NOT_FOUND");
+  const otherAdmins = deps.keys
+    .list()
+    .filter((key) => key.id !== id && key.scopes.includes("admin"));
+  if (target.scopes.includes("admin") && otherAdmins.length === 0) {
+    throw new Conflict(
+      "Refusing to revoke the last admin key",
+      "Create another admin key first with POST /v1/keys",
+      "LAST_ADMIN_KEY",
+    );
+  }
+  deps.keys.delete(id);
 }
 
 export function bootstrapAdminKey(deps: DomainDeps): string | null {

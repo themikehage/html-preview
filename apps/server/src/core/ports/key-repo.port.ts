@@ -9,6 +9,9 @@ export interface StoredApiKey extends ApiKey {
 export interface KeyRepo {
   create(key: StoredApiKey): void;
   findByHash(hash: string): StoredApiKey | null;
+  findById(id: string): StoredApiKey | null;
+  list(): StoredApiKey[];
+  delete(id: string): void;
   touch(id: string, at: string): void;
   count(): number;
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-import type { Visibility } from "@html-preview/shared";
+import type { Quotas, Visibility } from "@html-preview/shared";
 import type { BlobStore } from "./blob-store.port";
 import type { Clock } from "./clock.port";
 import type { DeploymentRepo } from "./deployment-repo.port";
@@ -19,4 +19,6 @@ export interface DomainDeps {
   readonly tx: Transactor;
   readonly defaultTtlHours: number;
   readonly maxVisibility: Visibility;
+  readonly quotas: Quotas;
+  readonly contentMode: "path" | "subdomain";
 }

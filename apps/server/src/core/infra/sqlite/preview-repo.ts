@@ -121,4 +121,31 @@ export class SqlitePreviewRepo implements PreviewRepo {
   delete(id: string): void {
     this.db.query("DELETE FROM previews WHERE id = ?").run(id);
   }
+
+  count(): number {
+    return (
+      this.db.query<{ total: number }, []>("SELECT COUNT(*) AS total FROM previews").get()?.total ??
+      0
+    );
+  }
+
+  listExpired(now: string): Preview[] {
+    return this.db
+      .query<PreviewRow, [string]>(
+        "SELECT * FROM previews WHERE pinned = 0 AND expires_at IS NOT NULL AND expires_at <= ?",
+      )
+      .all(now)
+      .map(toPreview);
+  }
+
+  deleteAbandoned(before: string): number {
+    return this.db
+      .query(
+        `DELETE FROM previews
+         WHERE current_deployment_id IS NULL AND created_at < ?
+           AND NOT EXISTS (SELECT 1 FROM deployments WHERE deployments.preview_id = previews.id)
+         RETURNING id`,
+      )
+      .all(before).length;
+  }
 }

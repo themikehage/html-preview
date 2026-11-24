@@ -7,7 +7,7 @@ html-preview es un servidor autohospedado y agent-first para desplegar y gestion
 
 Users are AI agents (Claude Code, Codex, Spaces agents, any MCP client) and the person who runs the instance. Core entities: **Preview** (named, mutable alias), **Deployment** (immutable manifest of files), **Blob** (content-addressed file), **API key**, **Share link**. Full product design: [docs/design.md](./docs/design.md).
 
-> **State**: H1–H3 done: foundation, storage, `/v1` deploy/manage API with API keys, and the path-mode content server. Limits/reaper (H4), MCP/docs (H5), CLI (H6), dashboard/private/share (H7) are next. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
+> **State**: H1–H4 done: foundation, storage, `/v1` deploy/manage API with scoped API keys, the path-mode content server, quotas, rate limit, reaper/GC and deploy warnings. MCP/docs (H5), CLI (H6), dashboard/private/share (H7) are next. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
 
 ---
 
@@ -59,12 +59,15 @@ docs/design.md     product design (source of truth)
 - `DATA_DIR` must be a persistent volume in production. It holds `html-preview.sqlite` (schema versioned with `PRAGMA user_version`, migrations in `core/infra/sqlite/migrations.ts`: append, never edit) and `blobs/`.
 - Deploy is two steps: `planDeployment` persists the preview and a `pending` deployment and returns missing blob hashes; `finalizeDeployment` verifies blobs and atomically promotes it. Repos and `Transactor` are synchronous (bun:sqlite); blob I/O is async and happens outside transactions.
 - Manifest paths are normalized (`./`, `//` collapsed) and rejected if absolute, `..`, backslash, NUL or hidden. Domain error codes are UPPER_SNAKE (`BLOBS_MISSING`, `INVALID_PATH`…); H1 generic codes are still lowercase.
-- API keys (`hp_…`, only the SHA-256 is stored) are created by `bootstrapAdminKey` on first boot (printed once to stdout). Any valid key may do anything in H3; scopes are stored but enforced in H4. All `/v1/*` needs `Authorization: Bearer`.
-- One-shot deploy extracts archives in memory (`domain/archive.ts`): a single top folder is stripped, `__MACOSX`/`.DS_Store` skipped, links and unsafe/hidden paths rejected. `MAX_DEPLOY_BYTES`/`MAX_DEPLOY_FILES` already cap bodies and extraction.
+- API keys (`hp_…`, only the SHA-256 is stored) are created by `bootstrapAdminKey` on first boot (printed once to stdout). Scopes are enforced: `read` for GET/HEAD on `/v1/previews`, `deploy` for any write on previews/blobs, `admin` for `/v1/keys` and `/v1/usage`; `admin` implies all. All `/v1/*` needs `Authorization: Bearer`; keys are rate-limited per key (token bucket, `RATE_LIMIT_PER_MIN`, 429 + `Retry-After`). The last admin key cannot be revoked.
+- One-shot deploy extracts archives in memory (`domain/archive.ts`): a single top folder is stripped, `__MACOSX`/`.DS_Store` skipped, links and unsafe/hidden paths rejected. `MAX_DEPLOY_BYTES`/`MAX_DEPLOY_FILES` cap bodies and extraction (`DEPLOY_TOO_LARGE`/`TOO_MANY_FILES`, 413); manifests are checked at plan time and `MAX_TOTAL_BYTES` yields 409 `INSTANCE_FULL`.
 - Visibility ceiling order: `private` < `unlisted` < `public`; `MAX_VISIBILITY` is the most open allowed. `private` previews are not served at all until H7 (share links). `/<name>/` aliases serve `public` only. Expired previews (not `pinned`) 404.
 - Content responses always carry the sandbox CSP (no `allow-same-origin`) plus `Access-Control-Allow-Origin: *` (needed for module scripts from the opaque origin). HTML gets root-relative `src|href|action|poster` rewritten under `/<id>` or `/<id>@<deploymentId>`; HTML is not range-served.
 - Bun 1.3.14: `HTMLRewriter` on a file-backed `Response` hangs under `Bun.serve` (buffer first) and `for await` over a request `ReadableStream` throws (use `getReader()`). In-process `fetch` tests do not catch these; keep real-socket tests (`Bun.serve({ port: 0 })`).
 - `GET /v1/previews/:name/files/*` serves untrusted files from the API origin as `text/plain`/`octet-stream` with `CSP: sandbox` + `nosniff`; never relax that.
+- Lifecycle: `runReaper` (every 10 min via `core/infra/scheduler.ts`, started in `index.ts` only) deletes expired non-pinned previews, stale `pending` plans (>1 h) and empty previews, prunes ready deployments beyond `KEEP_DEPLOYMENTS` (never the current one), then GC removes unreferenced blobs older than 1 h (the reference check runs per blob right before deleting). Everything is idempotent. Deploy responses carry `warnings` from `domain/warnings.ts`.
+- Error codes are listed in `packages/shared/src/errors.ts` (`ERROR_CODES`); add, never rename.
+- Bun `Statement.run().changes` includes rows removed by `ON DELETE CASCADE`: count deletions with `RETURNING id`. Blob mtimes are real fs times, not the fake clock: tests age them with `test-support/blobs.ts`.
 - Tests: `useTestContext()` from `src/test-support/context.ts` gives a temp `DATA_DIR`, fake clock and cleanup.
 - Dev defaults: `APP_ORIGIN=http://localhost:3000`, `CONTENT_ORIGIN=http://127.0.0.1:3000`; if the port is taken set all three (`PORT`, both origins). Requests are routed by `Host` header; unknown host → 421.
 
@@ -82,7 +85,9 @@ docs/design.md     product design (source of truth)
 | `ADMIN_PASSWORD` | Dashboard login (H7) | — |
 | `MAX_VISIBILITY` | `unlisted`, `private` or `public` ceiling | `unlisted` |
 | `DEFAULT_TTL_HOURS` | Default preview lifetime, `0` = never | `168` |
-| `MAX_DEPLOY_BYTES` / `MAX_DEPLOY_FILES` / `MAX_TOTAL_BYTES` | Quotas (H4) | `52428800` / `2000` / `5368709120` |
+| `MAX_DEPLOY_BYTES` / `MAX_DEPLOY_FILES` / `MAX_TOTAL_BYTES` | Quotas | `52428800` / `2000` / `5368709120` |
+| `KEEP_DEPLOYMENTS` | Ready deployments kept per preview | `10` |
+| `RATE_LIMIT_PER_MIN` | Requests per minute per API key, `0` = off | `120` |
 | `FRAME_ANCESTORS` | Extra origins allowed to embed previews | — |
 
 ---

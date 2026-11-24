@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import {
+  type DeployWarning,
   type Deployment,
   ManifestInput,
   type Preview,
@@ -10,8 +11,9 @@ import {
 import { BadRequest, Conflict, NotFound } from "../core/infra/errors";
 import type { DomainDeps } from "../core/ports/deps";
 import { normalizeManifest, resolveEntry } from "./manifest-path";
-import { requirePreview } from "./preview-admin";
+import { assertManifestWithinQuotas } from "./quotas";
 import { assertVisibilityAllowed, defaultVisibility, expiryFrom } from "./visibility";
+import { analyzeDeployment } from "./warnings";
 
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_REPORTED_BLOBS = 20;
@@ -36,6 +38,7 @@ export interface FinalizeResult {
   preview: Preview;
   deployment: Deployment;
   created: boolean;
+  warnings: DeployWarning[];
 }
 
 function parseName(name: string): string {
@@ -90,6 +93,7 @@ export async function planDeployment(deps: DomainDeps, input: PlanInput): Promis
   }
   if (input.visibility) assertVisibilityAllowed(input.visibility, deps.maxVisibility);
   const missing = await missingBlobs(deps, uniqueHashes(manifest));
+  assertManifestWithinQuotas(deps, manifest, missing);
   const now = deps.clock.now();
   const createdAt = now.toISOString();
   const deploymentId = deps.ids.deploymentId();
@@ -176,9 +180,11 @@ export async function finalizeDeployment(
     deps.deployments.markReady(deployment.id);
     deps.previews.setCurrentDeployment(preview.id, deployment.id, updatedAt);
   });
+  const ready: Deployment = { ...deployment, status: "ready" };
   return {
     preview: { ...preview, currentDeploymentId: deployment.id, updatedAt },
-    deployment: { ...deployment, status: "ready" },
+    deployment: ready,
     created: preview.currentDeploymentId === null,
+    warnings: await analyzeDeployment(deps, ready),
   };
 }

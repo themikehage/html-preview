@@ -43,6 +43,13 @@ export function createServerContext(
     tx: new SqliteTransactor(db),
     defaultTtlHours: config.DEFAULT_TTL_HOURS,
     maxVisibility: config.MAX_VISIBILITY,
+    quotas: {
+      maxDeployBytes: config.MAX_DEPLOY_BYTES,
+      maxDeployFiles: config.MAX_DEPLOY_FILES,
+      maxTotalBytes: config.MAX_TOTAL_BYTES,
+      keepDeployments: config.KEEP_DEPLOYMENTS,
+    },
+    contentMode: config.CONTENT_MODE,
   };
   return { config, version, deps, close: () => db.close() };
 }

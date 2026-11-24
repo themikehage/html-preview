@@ -118,4 +118,61 @@ export class SqliteDeploymentRepo implements DeploymentRepo {
   markReady(id: string): void {
     this.db.query("UPDATE deployments SET status = 'ready' WHERE id = ?").run(id);
   }
+
+  delete(id: string): void {
+    this.db.query("DELETE FROM deployments WHERE id = ?").run(id);
+  }
+
+  listPrunable(keep: number): string[] {
+    return this.db
+      .query<{ id: string }, [number]>(
+        `SELECT r.id FROM (
+           SELECT id, preview_id, ROW_NUMBER() OVER (
+             PARTITION BY preview_id ORDER BY created_at DESC, rowid DESC
+           ) AS position
+           FROM deployments WHERE status = 'ready'
+         ) r JOIN previews p ON p.id = r.preview_id
+         WHERE r.position > ? AND r.id IS NOT p.current_deployment_id`,
+      )
+      .all(keep)
+      .map((row) => row.id);
+  }
+
+  deleteStalePending(before: string): number {
+    return this.db
+      .query("DELETE FROM deployments WHERE status = 'pending' AND created_at < ? RETURNING id")
+      .all(before).length;
+  }
+
+  isHashReferenced(hash: string): boolean {
+    return (
+      this.db.query("SELECT 1 FROM deployment_files WHERE hash = ? LIMIT 1").get(hash) !== null
+    );
+  }
+
+  count(): number {
+    return (
+      this.db.query<{ total: number }, []>("SELECT COUNT(*) AS total FROM deployments").get()
+        ?.total ?? 0
+    );
+  }
+
+  referencedBytes(): number {
+    return (
+      this.db
+        .query<{ total: number }, []>(
+          "SELECT COALESCE(SUM(size), 0) AS total FROM (SELECT MAX(size) AS size FROM deployment_files GROUP BY hash)",
+        )
+        .get()?.total ?? 0
+    );
+  }
+
+  usageByCreator(): { createdBy: string; deployments: number; bytes: number }[] {
+    return this.db
+      .query<{ createdBy: string; deployments: number; bytes: number }, []>(
+        `SELECT created_by AS createdBy, COUNT(*) AS deployments, COALESCE(SUM(bytes), 0) AS bytes
+         FROM deployments GROUP BY created_by ORDER BY created_by`,
+      )
+      .all();
+  }
 }
