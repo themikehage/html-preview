@@ -1,6 +1,6 @@
 {
   "name": "live-pages",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "license": "MIT",
   "description": "CLI for html-preview: deploy a folder of static HTML to a self-hosted preview server and get a URL",
