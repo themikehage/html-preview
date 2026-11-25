@@ -2522,6 +2522,61 @@
           }
         }
       }
+    },
+    "/v1/admin/backup": {
+      "post": {
+        "operationId": "createBackup",
+        "summary": "Snapshot the database under DATA_DIR/backups (VACUUM INTO)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-required-scope": "admin",
+        "responses": {
+          "201": {
+            "description": "Snapshot written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "bytes",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {

@@ -1,0 +1,14 @@
+.git
+.github
+.agents
+.deploy.md
+.env
+.env.*
+node_modules
+**/node_modules
+dist
+**/dist
+data
+plans
+docs
+*.sqlite*

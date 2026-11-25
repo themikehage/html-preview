@@ -29,3 +29,4 @@ data/
 *.sqlite
 *.sqlite-*
 coverage/
+!.env.example

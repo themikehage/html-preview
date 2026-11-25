@@ -128,7 +128,7 @@ describe("MCP deploy tools (H5-A3, H5-A4)", () => {
     const { error } = ErrorBody.parse(result.structuredContent);
     expect(error.code).toBe("INLINE_TOO_LARGE");
     expect(error.fix).toBe(
-      "Deploy folders with the CLI: npx html-preview deploy ./<folder> --name big-site",
+      "Deploy folders with the CLI: npx live-pages deploy ./<folder> --name big-site",
     );
     const html = await tool(api, "deploy_html", { name: "big-page", html: "y".repeat(200) });
     expect(ErrorBody.parse(html.structuredContent).error.code).toBe("INLINE_TOO_LARGE");

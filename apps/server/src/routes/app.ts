@@ -7,6 +7,7 @@ import { NotFound } from "../core/infra/errors";
 import type { ServerContext } from "../core/infra/server-context";
 import { dashboardRouter } from "../dashboard";
 import { mcpRouter } from "../mcp/router";
+import { adminRouter } from "./admin";
 import { blobsRouter } from "./blobs";
 import { docsRouter } from "./docs";
 import { healthRouter } from "./health";
@@ -26,6 +27,7 @@ export function createApp(ctx: ServerContext): Hono {
   v1.route("/blobs", blobsRouter(ctx));
   v1.route("/keys", keysRouter(ctx));
   v1.route("/usage", usageRouter(ctx));
+  v1.route("/admin", adminRouter(ctx));
   app.route("/", healthRouter(ctx));
   app.route("/v1", v1);
   app.route("/mcp", mcpRouter(ctx, limiter));

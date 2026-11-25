@@ -2,6 +2,7 @@
 
 export * from "./api";
 export * from "./api-keys";
+export * from "./backup";
 export * from "./deploy-response";
 export * from "./deployment";
 export * from "./errors";

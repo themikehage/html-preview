@@ -8,6 +8,7 @@ import type { Ids } from "../ports/ids.port";
 import type { Config } from "./config";
 import { FsBlobStore } from "./fs-blob-store";
 import { loadSigningSecret } from "./signing-secret";
+import { SqliteBackup } from "./sqlite/backup";
 import { openDatabase } from "./sqlite/db";
 import { SqliteDeploymentRepo } from "./sqlite/deployment-repo";
 import { SqliteKeyRepo } from "./sqlite/key-repo";
@@ -41,6 +42,7 @@ export function createServerContext(
     keys: new SqliteKeyRepo(db),
     links: new SqliteLinkRepo(db),
     blobs: new FsBlobStore(join(config.DATA_DIR, "blobs")),
+    backup: new SqliteBackup(db, join(config.DATA_DIR, "backups")),
     clock: overrides.clock ?? systemClock,
     ids: overrides.ids ?? randomIds,
     tx: new SqliteTransactor(db),

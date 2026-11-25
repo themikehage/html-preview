@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import type { Quotas, Visibility } from "@html-preview/shared";
+import type { Backup } from "./backup.port";
 import type { BlobStore } from "./blob-store.port";
 import type { Clock } from "./clock.port";
 import type { DeploymentRepo } from "./deployment-repo.port";
@@ -16,6 +17,7 @@ export interface DomainDeps {
   readonly keys: KeyRepo;
   readonly links: LinkRepo;
   readonly blobs: BlobStore;
+  readonly backup: Backup;
   readonly clock: Clock;
   readonly ids: Ids;
   readonly tx: Transactor;

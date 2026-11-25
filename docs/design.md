@@ -104,7 +104,7 @@ Small, flat tools. Content goes inline only for small deploys; folders go throug
 - `rollback_preview(name, deploymentId?)`, `delete_preview(name)` (annotated `destructiveHint`).
 - `share_preview(name, expiresInHours?, label?)`, `revoke_share(name, linkId)`.
 
-### CLI (`npx html-preview …`, single file, no deps beyond fetch)
+### CLI (`npx live-pages …`, single file, no deps beyond fetch)
 
 `deploy <dir|file> [--name] [--ttl] [--visibility]`, `list`, `open`, `rollback`, `rm`, `share`, `watch <dir>` (re-deploy on change, manifest diff keeps it cheap), `login` (stores URL + key). `--json` on every command. Name defaults to the folder or file name, as in Spaces `publish`.
 

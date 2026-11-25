@@ -1,0 +1,9 @@
+# Two hostnames, one upstream. html-preview routes by Host header, so the
+# proxy must pass it through unchanged (Caddy does by default).
+{$APP_HOST} {
+	reverse_proxy html-preview:3000
+}
+
+{$CONTENT_HOST} {
+	reverse_proxy html-preview:3000
+}

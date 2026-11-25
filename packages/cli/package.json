@@ -1,13 +1,29 @@
 {
-  "name": "html-preview",
-  "version": "0.0.0",
-  "private": true,
+  "name": "live-pages",
+  "version": "0.1.0",
   "type": "module",
   "license": "MIT",
-  "description": "Deploy static HTML previews to a self-hosted html-preview server",
-  "bin": { "html-preview": "dist/index.js" },
+  "description": "CLI for html-preview: deploy a folder of static HTML to a self-hosted preview server and get a URL",
+  "keywords": ["html", "preview", "deploy", "static", "mcp", "agents"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/themikehage/html-preview.git",
+    "directory": "packages/cli"
+  },
+  "bugs": "https://github.com/themikehage/html-preview/issues",
+  "homepage": "https://github.com/themikehage/html-preview#readme",
+  "bin": {
+    "live-pages": "dist/index.js",
+    "html-preview": "dist/index.js"
+  },
   "files": ["dist"],
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "bun build src/index.ts --target node --outfile dist/index.js --banner '#!/usr/bin/env node'"
   },

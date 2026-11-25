@@ -1,13 +1,13 @@
 # About — html-preview
 
-> **Last updated**: 2026-11-24  
+> **Last updated**: 2026-11-25  
 > **Stack**: Bun + Hono + bun:sqlite + Zod + MCP SDK (server-rendered Hono JSX dashboard)
 
 html-preview es un servidor autohospedado y agent-first para desplegar y gestionar previews HTML estáticas: un agente sube una página o una carpeta y recibe una URL estable en menos de un segundo.
 
 Users are AI agents (Claude Code, Codex, Spaces agents, any MCP client) and the person who runs the instance. Core entities: **Preview** (named, mutable alias), **Deployment** (immutable manifest of files), **Blob** (content-addressed file), **API key**, **Share link**. Full product design: [docs/design.md](./docs/design.md).
 
-> **State**: H1–H7 done: foundation, storage, `/v1` deploy/manage API with scoped API keys, the path-mode content server, quotas, rate limit, reaper/GC, deploy warnings, MCP server, generated agent docs, the CLI, the server-rendered dashboard, `private` enforcement and share links. Packaging/release (H8) is next. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
+> **State**: H1–H7 done (H8 packaging written, release pending approval): foundation, storage, `/v1` deploy/manage API with scoped API keys, the path-mode content server, quotas, rate limit, reaper/GC, deploy warnings, MCP server, generated agent docs, the CLI, the server-rendered dashboard, `private` enforcement and share links. Docker image, compose, Coolify template, backup endpoint and release workflow exist; the first release tag is pushed only after explicit approval. H9 (subdomain mode) follows. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
 
 ---
 
@@ -29,9 +29,9 @@ apps/server/src/
   mcp/             MCP tools
   dashboard/       Hono JSX pages
 packages/shared/   zod schemas (single source for API, MCP, OpenAPI, CLI)
-packages/cli/      html-preview CLI (npm, published in H8): `src/cli.ts` dispatch, `commands/*`, `client.ts` (fetch only), `scan.ts`/`ignore.ts`/`deploy.ts`
+packages/cli/      CLI published to npm as `live-pages` (`html-preview` is taken; bins `live-pages` and `html-preview`): `src/cli.ts` dispatch, `commands/*`, `client.ts` (fetch only), `scan.ts`/`ignore.ts`/`deploy.ts`
 skill/SKILL.md     agent skill
-deploy/            Dockerfile, compose, coolify template
+deploy/            Dockerfile (alpine, non-root, /data volume), docker-compose.yml (+ Caddy `proxy` profile), coolify.yml, .env.example
 docs/design.md     product design (source of truth)
 ```
 
@@ -70,6 +70,7 @@ docs/design.md     product design (source of truth)
 - CLI (`packages/cli`): zero runtime deps, Node ≥ 20 + Bun, only `fetch` and `node:*`. Import from `@html-preview/shared` with `import type` only (a runtime import bundles zod and breaks the 200 KB budget; `scripts/check-bundle.ts` runs inside `build` and also rejects Bun APIs). Exit codes 0 ok / 1 usage / 2 API error / 3 network; `--json` prints the API response or error body verbatim. All I/O goes through the injectable `Runtime` so tests run against the in-process server. The client retries 429 honoring `Retry-After`. Credentials: flags > `HTML_PREVIEW_URL`/`HTML_PREVIEW_KEY` > `$XDG_CONFIG_HOME/html-preview/config.json` (0600). `share <name>` creates a link (`--expires`, `--label`), `--list` and `--revoke <id>` manage them.
 - Private previews and share links (H7): a stored visibility is clamped by `MAX_VISIBILITY` (`domain/visibility.ts#effectiveVisibility`) everywhere it is enforced. A `private` preview is a plain 404 on the content origin unless the path carries `/<id>/~<token>/…`: `<token>` is a share token (`sl_…`, only its SHA-256 stored) or an owner ticket (60 s), both exchanged by a 302 for a signed capability (1 h, bound to the preview id and, for links, checked against revocation on every request). HTML root-relative URLs are rewritten under the capability prefix; private content is `Cache-Control: private, no-store`. Failed `sl_` redemptions are rate limited per client (`x-forwarded-for`/`cf-connecting-ip`). Share links exist only for private previews; leaving `private` revokes them all. Tokens are HMAC-signed with `SIGNING_SECRET` (`domain/capability.ts`).
 - Dashboard (`apps/server/src/dashboard`, Hono JSX, no client build): mounted only when `ADMIN_PASSWORD` is set; stateless signed session cookie (`HttpOnly; SameSite=Strict; Path=/dashboard`, `Secure` when `APP_ORIGIN` is https; the key mixes in the password so changing it logs everyone out), CSRF token + same-origin `Origin` check on every POST, strict CSP (`default-src 'none'`, `frame-src CONTENT_ORIGIN`). Its `Referrer-Policy` is `same-origin`, NOT `no-referrer` (Chrome then sends `Origin: null` and the CSRF origin check rejects the dashboard's own forms). CSS is imported with `with { type: "text" }`: without the attribute `bun build` emits an asset and the page loses its styles in production (`scripts/check-bundle.ts` guards it). Biome formats `.css` files: edit them after a format pass. Dashboard calls domain services only.
+- Packaging (H8): build the image from the repo root (`docker build -f deploy/Dockerfile .`); it ships only the bundled `index.js` on `oven/bun:*-alpine` (~147 MB; `-slim` is ~247 MB). The HEALTHCHECK must send `Host: <APP_ORIGIN host>` because requests are routed by Host. `POST /v1/admin/backup` writes a `VACUUM INTO` snapshot to `DATA_DIR/backups` (never rotated). Docs and hints say `npx live-pages` (not `npx html-preview`, which is someone else's npm package). `release.yml` runs on tag `v*`, requires tag == all package versions, pushes to GHCR and publishes the CLI with provenance (`NPM_TOKEN` secret).
 - Error codes are listed in `packages/shared/src/errors.ts` (`ERROR_CODES`); add, never rename.
 - Bun `Statement.run().changes` includes rows removed by `ON DELETE CASCADE`: count deletions with `RETURNING id`. Blob mtimes are real fs times, not the fake clock: tests age them with `test-support/blobs.ts`.
 - Tests: `useTestContext()` from `src/test-support/context.ts` gives a temp `DATA_DIR`, fake clock and cleanup.
@@ -104,7 +105,7 @@ docs/design.md     product design (source of truth)
 - `bun run verify` — typecheck + `biome check` + `check:size` (no file > 300 lines) + `bun test` + build (server and CLI bundle, plus `check:bundle` ≤ 200 KB). `check:license` requires `// SPDX-License-Identifier: MIT` as first line of every `.ts`; keep a blank line after it (Biome import sorting).
 
 ### CI (mandatory)
-- Workflow: `.github/workflows/ci.yml` — on every push and PR: checkout → setup Bun → `bun install --frozen-lockfile` → `bun run verify`.
+- Workflow: `.github/workflows/ci.yml` — on every push and PR: checkout → setup Bun → `bun install --frozen-lockfile` → `bun run verify`; a second job builds the Docker image (no push). `release.yml` handles tags.
 
 ### Behavior check (optional)
 - `curl` against a local server (deploy, then fetch the returned URL). `/TEST` with Playwright for the dashboard from H7.

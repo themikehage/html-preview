@@ -13,7 +13,7 @@ class InlineTooLarge extends PayloadTooLarge {
   constructor(bytes: number, limit: number, name: string) {
     super(
       `Inline payload is ${bytes} bytes; MCP deploys are limited to ${limit}`,
-      `Deploy folders with the CLI: npx html-preview deploy ./<folder> --name ${name}`,
+      `Deploy folders with the CLI: npx live-pages deploy ./<folder> --name ${name}`,
       "INLINE_TOO_LARGE",
     );
   }

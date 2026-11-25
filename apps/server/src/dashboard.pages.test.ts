@@ -21,7 +21,7 @@ describe("previews list and favicon (H7-A2, H7-A3)", () => {
     const s = await signedIn(api);
     const empty = await (await s.get("/dashboard")).text();
     expect(empty).toContain("No previews yet");
-    expect(empty).toContain("npx html-preview deploy");
+    expect(empty).toContain("npx live-pages deploy");
 
     await deploy(api, "alpha-site", { "index.html": "<p>a</p>" });
     await deploy(api, "beta-site", { "index.html": "<p>b</p>" }, "?visibility=private");

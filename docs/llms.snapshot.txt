@@ -47,6 +47,7 @@ Roll back with POST /v1/previews/{name}/rollback; delete with DELETE /v1/preview
 - GET /v1/keys [admin]: List API keys (no secrets)
 - DELETE /v1/keys/{id} [admin]: Revoke an API key
 - GET /v1/usage [admin]: Totals, per-key usage and quota headroom
+- POST /v1/admin/backup [admin]: Snapshot the database under DATA_DIR/backups (VACUUM INTO)
 
 ## MCP tools
 

@@ -72,7 +72,7 @@ export function PreviewsPage(props: Props) {
               ? "Try another name or clear the filter."
               : "Deploy a folder or a single page and it shows up here."}
           </p>
-          {filtered ? null : <code>npx html-preview deploy ./dist</code>}
+          {filtered ? null : <code>npx live-pages deploy ./dist</code>}
         </div>
       ) : (
         <div class="box">

@@ -8,7 +8,7 @@ Keep it lean: every entry is **one line + a link to its plan** (archived in `pla
 
 ## Backlog
 
-- [ ] **H8 — Packaging and release**: Docker, compose, Coolify template, README, v0.1.0 → [plan](./plans/H8-packaging-and-release.md)
+- [ ] **H8 — Packaging and release** (in progress; A3, A6 repo/GHCR, A7 tag pending approval): Docker, compose, Coolify template, README, v0.1.0 → [plan](./plans/H8-packaging-and-release.md)
 - [ ] **H9 — Subdomain mode and SPA**: `CONTENT_MODE=subdomain`, `spa` fallback → [plan](./plans/H9-subdomain-mode-and-spa.md)
 
 ---

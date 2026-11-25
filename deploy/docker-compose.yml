@@ -1,0 +1,46 @@
+# html-preview — one container, two hostnames.
+#
+# Local trial (no proxy):   docker compose -f deploy/docker-compose.yml up --build
+# Production: set the variables below (e.g. in deploy/.env) and enable the `proxy` profile:
+#   docker compose -f deploy/docker-compose.yml --profile proxy up -d
+# See docs/self-hosting.md.
+services:
+  html-preview:
+    image: ${HTML_PREVIEW_IMAGE:-html-preview:local}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    environment:
+      # The API/dashboard origin and the untrusted-content origin MUST be different hosts.
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+      CONTENT_ORIGIN: ${CONTENT_ORIGIN:-http://127.0.0.1:3000}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SIGNING_SECRET: ${SIGNING_SECRET:-}
+      MAX_VISIBILITY: ${MAX_VISIBILITY:-unlisted}
+      DEFAULT_TTL_HOURS: ${DEFAULT_TTL_HOURS:-168}
+    volumes:
+      - data:/data
+    ports:
+      - "${PORT:-3000}:3000"
+
+  # Optional TLS reverse proxy for the two hostnames (Caddy gets the certificates).
+  caddy:
+    profiles: ["proxy"]
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - html-preview
+    environment:
+      APP_HOST: ${APP_HOST:-previews.example.com}
+      CONTENT_HOST: ${CONTENT_HOST:-p.example.com}
+    volumes:
+      - ./Caddyfile.example:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    ports:
+      - "80:80"
+      - "443:443"
+
+volumes:
+  data:
+  caddy_data:

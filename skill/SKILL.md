@@ -5,7 +5,7 @@ description: Publish an HTML page or a static site to a self-hosted html-preview
 
 # html-preview
 
-Deploys static HTML to a stable URL in about a second. Works through the MCP server (`/mcp`), the CLI (`npx html-preview`) or plain HTTP (`/v1`). The server publishes its own reference at `/llms.txt` and `/openapi.json`; read them when something here is not enough.
+Deploys static HTML to a stable URL in about a second. Works through the MCP server (`/mcp`), the CLI (`npx live-pages`) or plain HTTP (`/v1`). The server publishes its own reference at `/llms.txt` and `/openapi.json`; read them when something here is not enough.
 
 ## Install (Claude Code)
 
@@ -28,7 +28,7 @@ Copy this folder to `~/.claude/skills/html-preview/` (or `.claude/skills/` in a 
 |---|---|
 | One self-contained page | MCP `deploy_html` |
 | A few small text files (html, css, js) | MCP `deploy_files` |
-| A folder, images, a build output, anything large | CLI `npx html-preview deploy ./dist --name my-site` |
+| A folder, images, a build output, anything large | CLI `npx live-pages deploy ./dist --name my-site` |
 | MCP says `INLINE_TOO_LARGE` | run the exact command in its `fix` |
 
 Inline MCP deploys are capped (1 MB by default). Never base64-encode binaries into a tool call.
@@ -63,7 +63,7 @@ Every deploy returns `warnings` with the file and a `fix`. Fix them and redeploy
 ## Private previews and share links
 
 - Sensitive page? Deploy with `visibility: "private"` (or `update_preview`). A private preview is a 404 for everyone except the instance owner (dashboard) and people holding a share link.
-- `share_preview(name, expiresInHours?, label?)` returns a link URL **once**; give it to the person who needs it. CLI: `npx html-preview share <name> --expires 24 --label "design review"`.
+- `share_preview(name, expiresInHours?, label?)` returns a link URL **once**; give it to the person who needs it. CLI: `npx live-pages share <name> --expires 24 --label "design review"`.
 - Links expire (1 h to 30 days, default 7), are limited to 20 active per preview, and can be killed immediately with `revoke_share(name, linkId)`.
 - Sharing a preview that is not private fails with `PREVIEW_NOT_PRIVATE`; making it public or unlisted revokes all its links.
 

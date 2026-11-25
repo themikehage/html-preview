@@ -19,6 +19,7 @@ import {
   UpdatePreviewRequest,
 } from "./api";
 import { CreateKeyRequest, CreatedKey, KeyList, KeyParam, type Scope } from "./api-keys";
+import { BackupResult } from "./backup";
 import { DeployResponse } from "./deploy-response";
 import { Health } from "./health";
 import { CreateLinkRequest, CreatedLink, LinkList, LinkParam } from "./links";
@@ -234,6 +235,14 @@ export const OPERATIONS: readonly Operation[] = [
     summary: "Totals, per-key usage and quota headroom",
     scope: "admin",
     responses: [{ status: 200, description: "Usage", schema: Usage }],
+  },
+  {
+    id: "createBackup",
+    method: "post",
+    path: "/v1/admin/backup",
+    summary: "Snapshot the database under DATA_DIR/backups (VACUUM INTO)",
+    scope: "admin",
+    responses: [{ status: 201, description: "Snapshot written", schema: BackupResult }],
   },
 ];
 
