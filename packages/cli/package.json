@@ -4,5 +4,14 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "main": "src/index.ts"
+  "description": "Deploy static HTML previews to a self-hosted html-preview server",
+  "bin": { "html-preview": "dist/index.js" },
+  "files": ["dist"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "bun build src/index.ts --target node --outfile dist/index.js --banner '#!/usr/bin/env node'"
+  },
+  "dependencies": {
+    "@html-preview/shared": "workspace:*"
+  }
 }

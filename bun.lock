@@ -26,6 +26,12 @@
     "packages/cli": {
       "name": "html-preview",
       "version": "0.0.0",
+      "bin": {
+        "html-preview": "dist/index.js",
+      },
+      "dependencies": {
+        "@html-preview/shared": "workspace:*",
+      },
     },
     "packages/shared": {
       "name": "@html-preview/shared",

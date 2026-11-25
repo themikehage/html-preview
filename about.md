@@ -7,7 +7,7 @@ html-preview es un servidor autohospedado y agent-first para desplegar y gestion
 
 Users are AI agents (Claude Code, Codex, Spaces agents, any MCP client) and the person who runs the instance. Core entities: **Preview** (named, mutable alias), **Deployment** (immutable manifest of files), **Blob** (content-addressed file), **API key**, **Share link**. Full product design: [docs/design.md](./docs/design.md).
 
-> **State**: H1–H5 done: foundation, storage, `/v1` deploy/manage API with scoped API keys, the path-mode content server, quotas, rate limit, reaper/GC, deploy warnings, MCP server and generated agent docs. CLI (H6), dashboard/private/share (H7) are next. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
+> **State**: H1–H6 done: foundation, storage, `/v1` deploy/manage API with scoped API keys, the path-mode content server, quotas, rate limit, reaper/GC, deploy warnings, MCP server, generated agent docs and the CLI. Dashboard/private/share (H7) is next. Sections below describe the target set by `docs/design.md` and become factual as milestones land. Update them in the commit that makes them true.
 
 ---
 
@@ -29,7 +29,7 @@ apps/server/src/
   mcp/             MCP tools
   dashboard/       Hono JSX pages
 packages/shared/   zod schemas (single source for API, MCP, OpenAPI, CLI)
-packages/cli/      html-preview CLI (npm)
+packages/cli/      html-preview CLI (npm, published in H8): `src/cli.ts` dispatch, `commands/*`, `client.ts` (fetch only), `scan.ts`/`ignore.ts`/`deploy.ts`
 skill/SKILL.md     agent skill
 deploy/            Dockerfile, compose, coolify template
 docs/design.md     product design (source of truth)
@@ -67,6 +67,7 @@ docs/design.md     product design (source of truth)
 - `GET /v1/previews/:name/files/*` serves untrusted files from the API origin as `text/plain`/`octet-stream` with `CSP: sandbox` + `nosniff`; never relax that.
 - Lifecycle: `runReaper` (every 10 min via `core/infra/scheduler.ts`, started in `index.ts` only) deletes expired non-pinned previews, stale `pending` plans (>1 h) and empty previews, prunes ready deployments beyond `KEEP_DEPLOYMENTS` (never the current one), then GC removes unreferenced blobs older than 1 h (the reference check runs per blob right before deleting). Everything is idempotent. Deploy responses carry `warnings` from `domain/warnings.ts`.
 - Agent surfaces: `/mcp` is stateless streamable HTTP (POST only, JSON responses, one `McpServer` per request) authenticated and rate-limited like `/v1`; tools live in `mcp/tools/` and call the same domain services. `packages/shared/src/operations.ts` is the one registry of HTTP operations: `/openapi.json`, `/llms.txt` and the route contract test derive from it. Adding or changing a route/schema means updating `OPERATIONS` and running `bun run gen:docs` (committed `docs/*.snapshot.*` are compared in tests). `skill/SKILL.md` is the agent skill.
+- CLI (`packages/cli`): zero runtime deps, Node ≥ 20 + Bun, only `fetch` and `node:*`. Import from `@html-preview/shared` with `import type` only (a runtime import bundles zod and breaks the 200 KB budget; `scripts/check-bundle.ts` runs inside `build` and also rejects Bun APIs). Exit codes 0 ok / 1 usage / 2 API error / 3 network; `--json` prints the API response or error body verbatim. All I/O goes through the injectable `Runtime` so tests run against the in-process server. The client retries 429 honoring `Retry-After`. Credentials: flags > `HTML_PREVIEW_URL`/`HTML_PREVIEW_KEY` > `$XDG_CONFIG_HOME/html-preview/config.json` (0600). `share` is added in H7.
 - Error codes are listed in `packages/shared/src/errors.ts` (`ERROR_CODES`); add, never rename.
 - Bun `Statement.run().changes` includes rows removed by `ON DELETE CASCADE`: count deletions with `RETURNING id`. Blob mtimes are real fs times, not the fake clock: tests age them with `test-support/blobs.ts`.
 - Tests: `useTestContext()` from `src/test-support/context.ts` gives a temp `DATA_DIR`, fake clock and cleanup.
@@ -97,7 +98,7 @@ docs/design.md     product design (source of truth)
 ## Project Commands
 
 ### Quality gate (mandatory)
-- `bun run verify` — typecheck + `biome check` + `check:size` (no file > 300 lines) + `bun test` + build. `check:license` requires `// SPDX-License-Identifier: MIT` as first line of every `.ts`; keep a blank line after it (Biome import sorting).
+- `bun run verify` — typecheck + `biome check` + `check:size` (no file > 300 lines) + `bun test` + build (server and CLI bundle, plus `check:bundle` ≤ 200 KB). `check:license` requires `// SPDX-License-Identifier: MIT` as first line of every `.ts`; keep a blank line after it (Biome import sorting).
 
 ### CI (mandatory)
 - Workflow: `.github/workflows/ci.yml` — on every push and PR: checkout → setup Bun → `bun install --frozen-lockfile` → `bun run verify`.
@@ -106,5 +107,6 @@ docs/design.md     product design (source of truth)
 - `curl` against a local server (deploy, then fetch the returned URL). `/TEST` with Playwright for the dashboard from H7.
 
 ### Server
+- `node packages/cli/dist/index.js <command>` — the built CLI (`bun run build` produces it); `bun run --cwd packages/cli build` rebuilds only the CLI.
 - `bun run gen:docs` — regenerate `docs/openapi.snapshot.json` and `docs/llms.snapshot.txt` after changing schemas or operations.
 - `bun run dev` — server with hot reload on `:3000` (both origins via `localhost` / `127.0.0.1` in dev).
