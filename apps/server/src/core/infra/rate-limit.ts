@@ -46,6 +46,24 @@ export class TokenBucketLimiter {
     };
   }
 
+  /** Whether `take` would succeed right now, without spending a token. */
+  check(subject: string): RateDecision {
+    if (this.perMinute <= 0) return { allowed: true, retryAfterSeconds: 0 };
+    const now = this.clock.now().getTime();
+    const bucket = this.buckets.get(subject);
+    if (!bucket) return { allowed: true, retryAfterSeconds: 0 };
+    const refillPerMs = this.perMinute / 60_000;
+    const tokens = Math.min(
+      this.perMinute,
+      bucket.tokens + Math.max(0, now - bucket.updatedAt) * refillPerMs,
+    );
+    if (tokens >= 1) return { allowed: true, retryAfterSeconds: 0 };
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.max(1, Math.ceil((1 - tokens) / refillPerMs / 1000)),
+    };
+  }
+
   private sweep(now: number): void {
     if (now - this.lastSweep < IDLE_EVICT_MS) return;
     this.lastSweep = now;

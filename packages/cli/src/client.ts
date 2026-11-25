@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 
 import type {
+  CreateLinkRequest,
+  CreatedLink,
   DeployResponse,
   FileListing,
+  LinkList,
   PlanDeploymentRequest,
   PlanDeploymentResponse,
   PreviewDetail,
@@ -118,6 +121,18 @@ export class ApiClient {
     return this.request("POST", `/v1/previews/${name}/rollback`, {
       json: deploymentId ? { deploymentId } : {},
     });
+  }
+
+  createLink(name: string, body: Partial<CreateLinkRequest>): Promise<CreatedLink> {
+    return this.request("POST", `/v1/previews/${name}/links`, { json: body });
+  }
+
+  listLinks(name: string): Promise<LinkList> {
+    return this.request("GET", `/v1/previews/${name}/links`);
+  }
+
+  async revokeLink(name: string, id: string): Promise<void> {
+    await this.request<undefined>("DELETE", `/v1/previews/${name}/links/${id}`);
   }
 
   async remove(name: string): Promise<void> {

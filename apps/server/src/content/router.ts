@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 
 import { Hono } from "hono";
+import { TokenBucketLimiter } from "../core/infra/rate-limit";
 import type { ServerContext } from "../core/infra/server-context";
 import { healthRouter } from "../routes/health";
 import { plainResponse, securityHeaders } from "./headers";
 import { parseRange } from "./range";
+import { REDEEM_FAILURES_PER_MIN, clientKey, redeem } from "./redeem";
 import { resolveContent } from "./resolve";
 import { rewriteRootRelative } from "./rewrite-root-relative";
 
@@ -22,6 +24,7 @@ export function createContentApp(ctx: ServerContext): Hono {
   const { config, deps } = ctx;
   const app = new Hono();
   app.route("/", healthRouter(ctx));
+  const failures = new TokenBucketLimiter(REDEEM_FAILURES_PER_MIN, deps.clock);
 
   app.all("*", async (c) => {
     const method = c.req.method;
@@ -30,17 +33,20 @@ export function createContentApp(ctx: ServerContext): Hono {
     }
     const resolution = resolveContent(deps, new URL(c.req.url), deps.clock.now());
     if (!resolution) return plainResponse(config, 404, "Not found");
+    if (resolution.kind === "redeem") {
+      return redeem(deps, config, failures, resolution, clientKey(c.req.raw));
+    }
     if (resolution.kind === "redirect") {
       const headers = securityHeaders(config);
       headers.set("Location", resolution.location);
       return new Response(null, { status: 308, headers });
     }
 
-    const { file, prefix, fixed } = resolution;
+    const { file, prefix, fixed, restricted } = resolution;
     const etag = `"${file.hash}"`;
     const headers = securityHeaders(config);
     headers.set("Content-Type", file.contentType || "application/octet-stream");
-    headers.set("Cache-Control", fixed ? IMMUTABLE : "no-cache");
+    headers.set("Cache-Control", restricted ? "private, no-store" : fixed ? IMMUTABLE : "no-cache");
     headers.set("ETag", etag);
     if (matches(c.req.header("if-none-match") ?? null, etag)) {
       return new Response(null, { status: 304, headers });

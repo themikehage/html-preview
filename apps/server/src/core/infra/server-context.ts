@@ -7,9 +7,11 @@ import type { DomainDeps } from "../ports/deps";
 import type { Ids } from "../ports/ids.port";
 import type { Config } from "./config";
 import { FsBlobStore } from "./fs-blob-store";
+import { loadSigningSecret } from "./signing-secret";
 import { openDatabase } from "./sqlite/db";
 import { SqliteDeploymentRepo } from "./sqlite/deployment-repo";
 import { SqliteKeyRepo } from "./sqlite/key-repo";
+import { SqliteLinkRepo } from "./sqlite/link-repo";
 import { SqlitePreviewRepo } from "./sqlite/preview-repo";
 import { SqliteTransactor } from "./sqlite/transactor";
 import { randomIds, systemClock } from "./system";
@@ -37,6 +39,7 @@ export function createServerContext(
     previews: new SqlitePreviewRepo(db),
     deployments: new SqliteDeploymentRepo(db),
     keys: new SqliteKeyRepo(db),
+    links: new SqliteLinkRepo(db),
     blobs: new FsBlobStore(join(config.DATA_DIR, "blobs")),
     clock: overrides.clock ?? systemClock,
     ids: overrides.ids ?? randomIds,
@@ -50,6 +53,8 @@ export function createServerContext(
       keepDeployments: config.KEEP_DEPLOYMENTS,
     },
     contentMode: config.CONTENT_MODE,
+    contentOrigin: config.CONTENT_ORIGIN,
+    signingSecret: loadSigningSecret(config),
   };
   return { config, version, deps, close: () => db.close() };
 }

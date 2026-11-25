@@ -9,6 +9,11 @@ export function defaultVisibility(max: Visibility): Visibility {
   return OPENNESS.unlisted <= OPENNESS[max] ? "unlisted" : max;
 }
 
+/** What is actually enforced: a stored visibility can never be more open than the ceiling. */
+export function effectiveVisibility(stored: Visibility, max: Visibility): Visibility {
+  return OPENNESS[stored] <= OPENNESS[max] ? stored : max;
+}
+
 export function assertVisibilityAllowed(visibility: Visibility, max: Visibility): void {
   if (OPENNESS[visibility] <= OPENNESS[max]) return;
   throw new BadRequest(

@@ -123,6 +123,9 @@ export async function planDeployment(deps: DomainDeps, input: PlanInput): Promis
         },
         createdAt,
       );
+      if (input.visibility && input.visibility !== "private") {
+        deps.links.revokeAll(id, createdAt);
+      }
     }
     deps.deployments.create({
       id: deploymentId,

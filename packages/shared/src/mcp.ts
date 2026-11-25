@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { z } from "zod";
+import { CreateLinkRequest } from "./links";
 import { PreviewName, Visibility } from "./preview";
 
 const ttlHours = z
@@ -12,7 +13,9 @@ const ttlHours = z
 const name = PreviewName.describe(
   "Preview name: lowercase letters, digits and hyphens (e.g. 'landing-v2'). Re-deploying the same name updates it",
 );
-const visibility = Visibility.describe("unlisted (default) or public; private needs a share link");
+const visibility = Visibility.describe(
+  "unlisted (default), public, or private (reachable only through a share link)",
+);
 
 export const DeployHtmlArgs = z.object({
   name,
@@ -54,7 +57,18 @@ export const RollbackPreviewArgs = z.object({
 
 export const DeletePreviewArgs = z.object({ name });
 
-/** Every MCP tool name, in registration order. share_preview / revoke_share arrive with H7. */
+export const SharePreviewArgs = z.object({
+  name,
+  expiresInHours: CreateLinkRequest.shape.expiresInHours.optional(),
+  label: CreateLinkRequest.shape.label,
+});
+
+export const RevokeShareArgs = z.object({
+  name,
+  linkId: z.string().min(1).describe("The id returned by share_preview"),
+});
+
+/** Every MCP tool name, in registration order.  */
 export const MCP_TOOL_NAMES = [
   "deploy_html",
   "deploy_files",
@@ -63,5 +77,7 @@ export const MCP_TOOL_NAMES = [
   "update_preview",
   "rollback_preview",
   "delete_preview",
+  "share_preview",
+  "revoke_share",
 ] as const;
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number];

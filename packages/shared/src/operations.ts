@@ -21,6 +21,7 @@ import {
 import { CreateKeyRequest, CreatedKey, KeyList, KeyParam, type Scope } from "./api-keys";
 import { DeployResponse } from "./deploy-response";
 import { Health } from "./health";
+import { CreateLinkRequest, CreatedLink, LinkList, LinkParam } from "./links";
 import { Usage } from "./usage";
 
 export type HttpMethod = "get" | "put" | "post" | "patch" | "delete";
@@ -161,6 +162,34 @@ export const OPERATIONS: readonly Operation[] = [
     params: FileParam,
     query: FilesQuery,
     responses: [{ status: 200, description: "File bytes" }],
+  },
+  {
+    id: "listLinks",
+    method: "get",
+    path: "/v1/previews/{name}/links",
+    summary: "Share links of a private preview (no secrets)",
+    scope: "read",
+    params: NameParam,
+    responses: [{ status: 200, description: "The links", schema: LinkList }],
+  },
+  {
+    id: "createLink",
+    method: "post",
+    path: "/v1/previews/{name}/links",
+    summary: "Create a share link for a private preview (URL shown once)",
+    scope: "deploy",
+    params: NameParam,
+    json: CreateLinkRequest,
+    responses: [{ status: 201, description: "The link with its secret URL", schema: CreatedLink }],
+  },
+  {
+    id: "revokeLink",
+    method: "delete",
+    path: "/v1/previews/{name}/links/{id}",
+    summary: "Revoke a share link; it stops working immediately",
+    scope: "deploy",
+    params: LinkParam,
+    responses: [{ status: 204, description: "Revoked" }],
   },
   {
     id: "putBlob",

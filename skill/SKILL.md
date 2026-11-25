@@ -20,7 +20,7 @@ Copy this folder to `~/.claude/skills/html-preview/` (or `.claude/skills/` in a 
 
 - The user asks for a link, a preview, or to "show" a page you generated.
 - You built a static site (Vite, Astro, plain HTML) and the user should look at it.
-- Do **not** deploy secrets, private data or anything the user did not ask to share. Previews are reachable by anyone with the URL.
+- Do **not** deploy secrets, private data or anything the user did not ask to share. By default previews are reachable by anyone with the URL.
 
 ## Pick the right tool
 
@@ -59,6 +59,13 @@ Every deploy returns `warnings` with the file and a `fix`. Fix them and redeploy
 | `MIXED_CONTENT` | an `http://` subresource; use https or a relative path |
 | `LARGE_FILE` | a file above 5 MB; compress it |
 | `NO_ENTRY_HTML` | the entry is not an `.html` page |
+
+## Private previews and share links
+
+- Sensitive page? Deploy with `visibility: "private"` (or `update_preview`). A private preview is a 404 for everyone except the instance owner (dashboard) and people holding a share link.
+- `share_preview(name, expiresInHours?, label?)` returns a link URL **once**; give it to the person who needs it. CLI: `npx html-preview share <name> --expires 24 --label "design review"`.
+- Links expire (1 h to 30 days, default 7), are limited to 20 active per preview, and can be killed immediately with `revoke_share(name, linkId)`.
+- Sharing a preview that is not private fails with `PREVIEW_NOT_PRIVATE`; making it public or unlisted revokes all its links.
 
 ## TTL etiquette
 

@@ -5,4 +5,7 @@ export interface Ids {
   deploymentId(): string;
   apiKeyId(): string;
   secret(): string;
+  linkId(): string;
+  /** Secret share token; only its SHA-256 is stored. */
+  shareToken(): string;
 }

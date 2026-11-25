@@ -18,3 +18,11 @@ if (/from\s*["'](?:bun|bun:)/.test(text) || text.includes("Bun.")) {
   process.exit(1);
 }
 console.log(`CLI bundle ok: ${bytes} bytes`);
+
+const server = await Bun.file(new URL("../dist/index.js", import.meta.url).pathname).text();
+if (!server.includes("--canvas")) {
+  console.error(
+    'Server bundle does not embed dashboard styles as text (import ... with { type: "text" })',
+  );
+  process.exit(1);
+}

@@ -22,6 +22,10 @@ const OPTIONS = {
   query: { type: "string", short: "q" },
   limit: { type: "string" },
   debounce: { type: "string" },
+  expires: { type: "string" },
+  label: { type: "string" },
+  list: { type: "boolean" },
+  revoke: { type: "string" },
 } as const;
 
 export interface Parsed {
@@ -42,6 +46,10 @@ export interface Parsed {
   query?: string | undefined;
   limit?: number | undefined;
   debounce?: number | undefined;
+  expires?: number | undefined;
+  label?: string | undefined;
+  list: boolean;
+  revoke?: string | undefined;
 }
 
 function toInt(flag: string, raw: string | undefined, min: number): number | undefined {
@@ -95,5 +103,9 @@ export function parseCli(argv: string[]): Parsed {
     query: values.query,
     limit: toInt("limit", values.limit, 1),
     debounce: toInt("debounce", values.debounce, 0),
+    expires: toInt("expires", values.expires, 1),
+    label: values.label,
+    list: values.list ?? false,
+    revoke: values.revoke,
   };
 }

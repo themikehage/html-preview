@@ -15,6 +15,7 @@ const schema = z.object({
   CONTENT_ORIGIN: origin.default("http://127.0.0.1:3000"),
   CONTENT_MODE: z.enum(["path", "subdomain"]).default("path"),
   ADMIN_PASSWORD: z.string().min(1).optional(),
+  SIGNING_SECRET: z.string().min(32).optional(),
   MAX_VISIBILITY: z.enum(["unlisted", "private", "public"]).default("unlisted"),
   DEFAULT_TTL_HOURS: z.coerce.number().int().min(0).default(168),
   MAX_DEPLOY_BYTES: z.coerce.number().int().positive().default(52_428_800),

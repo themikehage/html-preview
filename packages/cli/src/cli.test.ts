@@ -259,3 +259,32 @@ describe("rate limiting", () => {
     expect(h.sleeps).toEqual([2000]);
   });
 });
+
+describe("share (H7-A5)", () => {
+  test("creates, lists and revokes share links of a private preview", async () => {
+    const h = make();
+    h.write("s/index.html", "<p>secret</p>");
+    await h.run("deploy", "s", "--visibility", "private", "--json");
+    expect(await h.run("share", "s", "--expires", "2", "--label", "qa", "--json")).toBe(0);
+    const created = h.json() as { id: string; url: string; label: string };
+    expect(created.label).toBe("qa");
+    expect(created.url).toContain("/~sl_");
+
+    await h.run("share", "s", "--list", "--json");
+    expect((h.json() as { links: { id: string }[] }).links.map((link) => link.id)).toEqual([
+      created.id,
+    ]);
+
+    expect(await h.run("share", "s", "--revoke", created.id, "--json")).toBe(0);
+    expect(await h.run("share", "s", "--revoke", "l_unknown", "--json")).toBe(2);
+    expect(h.json()).toMatchObject({ error: { code: "LINK_NOT_FOUND" } });
+  });
+
+  test("a public preview cannot be shared: PREVIEW_NOT_PRIVATE (exit 2)", async () => {
+    const h = make();
+    h.write("o/index.html", "<p>x</p>");
+    await h.run("deploy", "o", "--json");
+    expect(await h.run("share", "o", "--json")).toBe(2);
+    expect(h.json()).toMatchObject({ error: { code: "PREVIEW_NOT_PRIVATE" } });
+  });
+});

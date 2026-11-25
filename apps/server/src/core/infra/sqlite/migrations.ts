@@ -48,6 +48,21 @@ const MIGRATIONS: readonly string[] = [
     last_used_at TEXT
   );
   `,
+  `
+  CREATE TABLE share_links (
+    id TEXT PRIMARY KEY,
+    preview_id TEXT NOT NULL REFERENCES previews(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    label TEXT,
+    created_by TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    revoked_at TEXT,
+    access_count INTEGER NOT NULL DEFAULT 0,
+    last_accessed_at TEXT
+  );
+  CREATE INDEX share_links_preview_idx ON share_links (preview_id);
+  `,
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS.length;

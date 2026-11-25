@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import {
+  CreatedLink,
   DeletePreviewArgs,
   GetPreviewArgs,
   ListPreviewsArgs,
@@ -9,15 +10,18 @@ import {
   type PreviewList,
   PreviewList as PreviewListSchema,
   PreviewView,
+  RevokeShareArgs,
   RollbackPreviewArgs,
+  SharePreviewArgs,
   UpdatePreviewArgs,
 } from "@html-preview/shared";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { deletePreview } from "../../domain/delete";
+import { createLink, revokeLink } from "../../domain/links";
 import { updatePreview } from "../../domain/preview-admin";
 import { getPreview, listPreviews } from "../../domain/queries";
 import { rollback } from "../../domain/rollback";
-import { toDeploymentView, toPreviewView } from "../../routes/previews/views";
+import { toDeploymentView, toLinkView, toPreviewView } from "../../routes/previews/views";
 import { type McpEnv, guarded, ok } from "../result";
 
 const read = { readOnlyHint: true, openWorldHint: false };
@@ -144,6 +148,52 @@ export function registerManageTools(server: McpServer, env: McpEnv): void {
       guarded(env, "deploy", () => {
         deletePreview(deps, args.name);
         return { content: [{ type: "text", text: `Deleted "${args.name}".` }] };
+      }),
+  );
+
+  server.registerTool(
+    "share_preview",
+    {
+      title: "Share a private preview",
+      description:
+        "Create an expiring share link for a PRIVATE preview (set visibility to private first). The URL is shown only once; hand it to the person who should see the page.",
+      inputSchema: SharePreviewArgs.shape,
+      outputSchema: CreatedLink.shape,
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    (args) =>
+      guarded(env, "deploy", () => {
+        const { link, url } = createLink(deps, {
+          name: args.name,
+          expiresInHours: args.expiresInHours,
+          label: args.label,
+          createdBy: env.key.label,
+        });
+        const created: CreatedLink = { ...toLinkView(link), url };
+        return ok(
+          `${url} — share link "${link.id}" for "${args.name}", expires ${link.expiresAt}.`,
+          created,
+        );
+      }),
+  );
+
+  server.registerTool(
+    "revoke_share",
+    {
+      title: "Revoke a share link",
+      description: "Revoke a share link by id; it stops working immediately.",
+      inputSchema: RevokeShareArgs.shape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    (args) =>
+      guarded(env, "deploy", () => {
+        revokeLink(deps, args.name, args.linkId);
+        return { content: [{ type: "text", text: `Revoked link "${args.linkId}".` }] };
       }),
   );
 }

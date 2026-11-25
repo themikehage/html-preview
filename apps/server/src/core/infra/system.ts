@@ -15,4 +15,6 @@ export const randomIds: Ids = {
   deploymentId: () => `d_${token()}`,
   apiKeyId: () => `k_${token()}`,
   secret: () => `hp_${randomBytes(32).toString("base64url")}`,
+  linkId: () => `l_${token()}`,
+  shareToken: () => `sl_${randomBytes(32).toString("base64url")}`,
 };

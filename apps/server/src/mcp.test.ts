@@ -52,7 +52,7 @@ describe("MCP server (H5-A1, H5-A2)", () => {
     expect(res.headers.get("allow")).toBe("POST");
   });
 
-  test("lists exactly the shared tool names, with annotations, no share tools yet", async () => {
+  test("lists exactly the shared tool names, with annotations", async () => {
     const api = make();
     const res = await rpc(api, "tools/list");
     const body = (await res.json()) as {
@@ -66,7 +66,9 @@ describe("MCP server (H5-A1, H5-A2)", () => {
     };
     const tools = body.result.tools;
     expect(tools.map((item) => item.name)).toEqual([...MCP_TOOL_NAMES]);
-    expect(tools.some((item) => item.name.includes("share"))).toBe(false);
+    expect(tools.map((item) => item.name)).toEqual(
+      expect.arrayContaining(["share_preview", "revoke_share"]),
+    );
     const byName = Object.fromEntries(tools.map((item) => [item.name, item.annotations]));
     for (const name of ["list_previews", "get_preview"])
       expect(byName[name]?.readOnlyHint).toBe(true);
@@ -191,5 +193,36 @@ describe("MCP manage tools and scopes", () => {
     expect((await rpc(api, "tools/list")).status).toBe(200);
     expect((await api.call("GET", "/v1/previews")).status).toBe(200);
     expect((await rpc(api, "tools/list")).status).toBe(429);
+  });
+});
+
+describe("MCP share tools (H7-A5)", () => {
+  test("share_preview needs a private preview, returns the URL once; revoke_share stops it", async () => {
+    const api = make();
+    await tool(api, "deploy_html", { name: "secret", html: "<p>s</p>" });
+
+    const refused = await tool(api, "share_preview", { name: "secret" });
+    expect(refused.isError).toBe(true);
+    expect(ErrorBody.parse(refused.structuredContent).error.code).toBe("PREVIEW_NOT_PRIVATE");
+
+    await tool(api, "update_preview", { name: "secret", visibility: "private" });
+    const shared = await tool(api, "share_preview", {
+      name: "secret",
+      expiresInHours: 2,
+      label: "reviewer",
+    });
+    expect(shared.isError).toBeUndefined();
+    const link = shared.structuredContent as { id: string; url: string; label: string };
+    expect(shared.content[0]?.text.startsWith(link.url)).toBe(true);
+    expect(link.label).toBe("reviewer");
+
+    const first = await api.content(new URL(link.url).pathname);
+    expect(first.status).toBe(302);
+
+    const revoked = await tool(api, "revoke_share", { name: "secret", linkId: link.id });
+    expect(revoked.isError).toBeUndefined();
+    expect((await api.content(new URL(link.url).pathname)).status).toBe(404);
+    const again = await tool(api, "revoke_share", { name: "secret", linkId: "l_nope" });
+    expect(ErrorBody.parse(again.structuredContent).error.code).toBe("LINK_NOT_FOUND");
   });
 });

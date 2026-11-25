@@ -39,6 +39,9 @@ Roll back with POST /v1/previews/{name}/rollback; delete with DELETE /v1/preview
 - POST /v1/previews/{name}/deployments/{id}/finalize [deploy]: Verify blobs and promote the deployment atomically
 - GET /v1/previews/{name}/files [read]: Manifest of a deployment
 - GET /v1/previews/{name}/files/{path} [read]: Read one file (served as text/plain or octet-stream)
+- GET /v1/previews/{name}/links [read]: Share links of a private preview (no secrets)
+- POST /v1/previews/{name}/links [deploy]: Create a share link for a private preview (URL shown once)
+- DELETE /v1/previews/{name}/links/{id} [deploy]: Revoke a share link; it stops working immediately
 - PUT /v1/blobs/{sha256} [deploy]: Upload a blob by content hash
 - POST /v1/keys [admin]: Create an API key (token shown once)
 - GET /v1/keys [admin]: List API keys (no secrets)
@@ -47,11 +50,11 @@ Roll back with POST /v1/previews/{name}/rollback; delete with DELETE /v1/preview
 
 ## MCP tools
 
-deploy_html, deploy_files, list_previews, get_preview, update_preview, rollback_preview, delete_preview
+deploy_html, deploy_files, list_previews, get_preview, update_preview, rollback_preview, delete_preview, share_preview, revoke_share
 
 ## Errors
 
-Errors are JSON: {"error": {"code", "message", "fix"}}. Follow "fix". Codes: ALREADY_CURRENT, BAD_REQUEST, BLOBS_MISSING, CONFLICT, DEPLOYMENT_ALREADY_FINAL, DEPLOYMENT_NOT_FOUND, DEPLOY_TOO_LARGE, ENTRY_MISSING, FILE_NOT_FOUND, FORBIDDEN, HASH_MISMATCH, INSTANCE_FULL, INLINE_TOO_LARGE, INSUFFICIENT_SCOPE, INTERNAL_ERROR, INVALID_ACTOR, INVALID_ARCHIVE, INVALID_HASH, INVALID_MANIFEST, INVALID_MESSAGE, INVALID_NAME, INVALID_PATH, INVALID_REQUEST, KEY_NOT_FOUND, LAST_ADMIN_KEY, METHOD_NOT_ALLOWED, NAME_TAKEN, NOT_FOUND, NO_DEPLOYMENT, NO_PREVIOUS_DEPLOYMENT, PAYLOAD_TOO_LARGE, PREVIEW_NOT_FOUND, RATE_LIMITED, TOO_MANY_FILES, UNAUTHORIZED, UNKNOWN_HOST, UNSUPPORTED_MEDIA_TYPE, VISIBILITY_NOT_ALLOWED.
+Errors are JSON: {"error": {"code", "message", "fix"}}. Follow "fix". Codes: ALREADY_CURRENT, BAD_REQUEST, BLOBS_MISSING, CONFLICT, DEPLOYMENT_ALREADY_FINAL, DEPLOYMENT_NOT_FOUND, DEPLOY_TOO_LARGE, ENTRY_MISSING, FILE_NOT_FOUND, FORBIDDEN, HASH_MISMATCH, INSTANCE_FULL, INLINE_TOO_LARGE, INSUFFICIENT_SCOPE, INTERNAL_ERROR, INVALID_ACTOR, INVALID_ARCHIVE, INVALID_CREDENTIALS, INVALID_CSRF, INVALID_HASH, INVALID_MANIFEST, INVALID_MESSAGE, INVALID_NAME, INVALID_PATH, INVALID_REQUEST, KEY_NOT_FOUND, LAST_ADMIN_KEY, LINK_NOT_FOUND, METHOD_NOT_ALLOWED, NAME_TAKEN, NOT_FOUND, NO_DEPLOYMENT, NO_PREVIOUS_DEPLOYMENT, PAYLOAD_TOO_LARGE, PREVIEW_NOT_FOUND, PREVIEW_NOT_PRIVATE, RATE_LIMITED, TOO_MANY_FILES, TOO_MANY_LINKS, UNAUTHORIZED, UNKNOWN_HOST, UNSUPPORTED_MEDIA_TYPE, VISIBILITY_NOT_ALLOWED.
 
 ## Deploy warnings
 

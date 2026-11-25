@@ -4,11 +4,13 @@ import type {
   DeployResponse,
   DeploymentSummary,
   DeploymentView,
+  LinkView,
   Preview,
   PreviewView,
 } from "@html-preview/shared";
 import type { Config } from "../../core/infra/config";
 import { deploymentUrl, previewUrl } from "../../core/infra/urls";
+import type { StoredLink } from "../../core/ports/link-repo.port";
 import type { FinalizeResult } from "../../domain/deploy";
 
 export function toPreviewView(
@@ -45,4 +47,9 @@ export function toDeployResponse(config: Config, result: FinalizeResult): Deploy
     expiresAt: preview.expiresAt,
     warnings,
   };
+}
+
+export function toLinkView(link: StoredLink): LinkView {
+  const { previewId: _previewId, tokenHash: _tokenHash, ...view } = link;
+  return view;
 }

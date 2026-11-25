@@ -45,3 +45,39 @@ export async function remove(ctx: Ctx): Promise<void> {
   await (await makeClient(ctx)).remove(name);
   emit(ctx, { deleted: name }, () => [`Deleted ${name}`]);
 }
+
+export async function share(ctx: Ctx): Promise<void> {
+  const name = requireArg(
+    ctx,
+    0,
+    "preview name",
+    "share <name> [--expires <hours>] [--label <text>] | --list | --revoke <linkId>",
+  );
+  const client = await makeClient(ctx);
+  const { revoke } = ctx.args;
+  if (revoke) {
+    await client.revokeLink(name, revoke);
+    emit(ctx, { revoked: revoke }, () => [`Revoked ${revoke}`]);
+    return;
+  }
+  if (ctx.args.list) {
+    const { links } = await client.listLinks(name);
+    emit(ctx, { links }, () =>
+      links.length === 0
+        ? ["No share links"]
+        : links.map((link) => {
+            const state = link.revokedAt ? "revoked" : `expires ${link.expiresAt}`;
+            return `${link.id}  ${link.label ?? "-"}  ${state}  ${link.accessCount} opens`;
+          }),
+    );
+    return;
+  }
+  const created = await client.createLink(name, {
+    ...(ctx.args.expires ? { expiresInHours: ctx.args.expires } : {}),
+    ...(ctx.args.label ? { label: ctx.args.label } : {}),
+  });
+  emit(ctx, created, () => [
+    created.url,
+    `  link ${created.id}, expires ${created.expiresAt}. The URL is shown only once.`,
+  ]);
+}

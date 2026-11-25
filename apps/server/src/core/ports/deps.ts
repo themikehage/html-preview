@@ -6,6 +6,7 @@ import type { Clock } from "./clock.port";
 import type { DeploymentRepo } from "./deployment-repo.port";
 import type { Ids } from "./ids.port";
 import type { KeyRepo } from "./key-repo.port";
+import type { LinkRepo } from "./link-repo.port";
 import type { PreviewRepo } from "./preview-repo.port";
 import type { Transactor } from "./transactor.port";
 
@@ -13,6 +14,7 @@ export interface DomainDeps {
   readonly previews: PreviewRepo;
   readonly deployments: DeploymentRepo;
   readonly keys: KeyRepo;
+  readonly links: LinkRepo;
   readonly blobs: BlobStore;
   readonly clock: Clock;
   readonly ids: Ids;
@@ -21,4 +23,8 @@ export interface DomainDeps {
   readonly maxVisibility: Visibility;
   readonly quotas: Quotas;
   readonly contentMode: "path" | "subdomain";
+  /** Public origin of the content server; share link and ticket URLs are built on it. */
+  readonly contentOrigin: string;
+  /** HMAC key for tickets, capabilities and dashboard sessions. */
+  readonly signingSecret: string;
 }

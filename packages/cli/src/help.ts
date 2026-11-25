@@ -12,6 +12,8 @@ Commands:
   info <name>                     Preview detail with its deployments
   open <name>                     Open a preview in the browser
   rollback <name> [--to <id>]     Point the preview at an earlier deployment
+  share <name>                    Share link for a private preview (--expires <hours>,
+                                  --label <text>, --list, --revoke <linkId>)
   rm <name>                       Delete a preview
 
 Deploy options:

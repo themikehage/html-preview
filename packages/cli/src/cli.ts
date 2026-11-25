@@ -4,7 +4,7 @@ import { parseCli } from "./args";
 import type { Ctx } from "./commands/context";
 import { deploy } from "./commands/deploy";
 import { login } from "./commands/login";
-import { info, list, open, remove, rollback } from "./commands/manage";
+import { info, list, open, remove, rollback, share } from "./commands/manage";
 import { watch } from "./commands/watch";
 import { EXIT, UsageError, exitCodeOf, payloadOf } from "./errors";
 import { HELP } from "./help";
@@ -19,6 +19,7 @@ const COMMANDS: Record<string, (ctx: Ctx) => Promise<void>> = {
   info,
   open,
   rollback,
+  share,
   rm: remove,
   delete: remove,
 };

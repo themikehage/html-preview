@@ -5,6 +5,7 @@
   "linter": {
     "rules": {
       "recommended": true,
+      "correctness": { "useJsxKeyInIterable": "off" },
       "suspicious": { "noExplicitAny": "error" }
     }
   }

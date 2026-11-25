@@ -44,6 +44,9 @@ export function updatePreview(deps: DomainDeps, input: UpdatePreviewInput): Prev
       );
     }
     deps.previews.update(preview.id, patch, updatedAt);
+    if (input.visibility && input.visibility !== "private") {
+      deps.links.revokeAll(preview.id, updatedAt);
+    }
   });
   return requirePreview(deps, input.newName ?? input.name);
 }

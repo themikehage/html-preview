@@ -6,6 +6,7 @@ import type { ServerContext } from "../../core/infra/server-context";
 import { deployCrud } from "./deploy-crud";
 import { deploymentsCrud } from "./deployments-crud";
 import { filesCrud } from "./files-crud";
+import { linksCrud } from "./links-crud";
 import { manageCrud } from "./manage-crud";
 
 export function previewsRouter(ctx: ServerContext): Hono<AppEnv> {
@@ -14,5 +15,6 @@ export function previewsRouter(ctx: ServerContext): Hono<AppEnv> {
   router.route("/", deployCrud(ctx));
   router.route("/", deploymentsCrud(ctx));
   router.route("/", filesCrud(ctx));
+  router.route("/", linksCrud(ctx));
   return router;
 }
