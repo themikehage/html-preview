@@ -66,7 +66,7 @@ Behavior check: `docker compose -f deploy/docker-compose.yml up`, deploy with th
 - H8-A4 — `POST /v1/admin/backup` (`api.backup.test.ts`: snapshot opens read-only, `integrity_check` ok, contains the preview; non-admin 403, no key 401). Verified in the container: file under `/data/backups`. Restore documented in `docs/self-hosting.md`.
 - H8-A5 — README (es), `docs/{self-hosting,api,agents}.md`, `SECURITY.md`, `CONTRIBUTING.md`; MCP/CLI names checked against `MCP_TOOL_NAMES` and `help.ts`.
 - H8-A6 — PARTIAL. npm `html-preview` is taken (v1.0.0, not ours) → user picked from `live-html`/`live-pages`/`htmlive`; `htmlive` taken, `live-html` and `live-pages` free; CLI renamed `live-pages` (bins `live-pages` + `html-preview`), `npx` hints updated. GitHub repo `themikehage/html-preview` created (public) and pushed; GHCR namespace unverified until first push.
-- H8-A7 — PARTIAL. `.github/workflows/release.yml` (tag `v*`: verify, tag==versions, GHCR push, npm publish with provenance via `NPM_TOKEN`) written and YAML-valid; `npm pack --dry-run` ok (`live-pages-0.1.0.tgz`, 8.9 kB). Tag NOT pushed; needs the repo, secrets and explicit approval.
+- H8-A7 — PARTIAL. Tag `v0.1.0` pushed (run 45629882140): `verify` and `image` green; `ghcr.io/themikehage/html-preview:0.1.0` pulls anonymously (manifest 200). The `npm` job skipped publishing because `NPM_TOKEN` is not set (the workflow now skips with a warning instead of failing); `live-pages` is NOT on npm yet.
 - H8-A8 — `bun run verify` green (188 tests, bundles ok). CI `docker` job added; CI run 45621040689 on GitHub: `verify` and `docker` jobs green.
 
 ---

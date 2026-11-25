@@ -1,6 +1,6 @@
 # Testing handoff — what a fresh session needs
 
-Goal: exercise the features of H1–H8 against a real server, beyond `bun run verify` (188 tests, all in-process). State at handoff: `main` at the H8 commits, public repo `themikehage/html-preview`, CI green, **no release tag pushed**, no live deployment (the Coolify smoke app was deleted).
+Goal: exercise the features of H1–H8 against a real server, beyond `bun run verify` (188 tests, all in-process). State at handoff: public repo `themikehage/html-preview`, CI green, tag `v0.1.0` pushed (image `ghcr.io/themikehage/html-preview:0.1.0` is public; **not on npm**), no live deployment (the Coolify smoke app was deleted).
 
 ## Setup (local)
 
@@ -36,8 +36,8 @@ Docker: `sudo -n docker build -f deploy/Dockerfile -t html-preview:dev .` (the u
 
 ## Still untested / needs the user
 
-1. **Release path**: `release.yml` has never run. Needs secret `NPM_TOKEN` and the user's explicit approval to push `v0.1.0` (publishes `live-pages` to npm and the image to GHCR; irreversible). npm may reject the name by similarity; fall back to `live-html`.
-2. **`deploy/coolify.yml`** (SERVICE_FQDN_* template with two domains) needs the GHCR image, so it can only be tested after the release. The Dockerfile build-pack path was smoke-tested on Coolify Oracle and works.
+1. **npm publish**: the image part of the release ran; the npm job skipped because secret `NPM_TOKEN` is missing (needs the user: create an automation token on npm, `gh secret set NPM_TOKEN`, then re-run the `npm` job of the `v0.1.0` Release run). npm may reject `live-pages` by similarity; fall back to `live-html` (rename in `packages/cli/package.json`, hints and docs).
+2. **`deploy/coolify.yml`** (SERVICE_FQDN_* template with two domains) is untested; the GHCR image now exists, so it can be tried (needs user approval to deploy). The Dockerfile build-pack path was smoke-tested on Coolify Oracle and works.
 3. **Caddy proxy profile** in compose (real TLS, two hosts) not run.
 4. **MCP from a real client** (Claude Code, Codex, Cursor) not run.
 5. **Rate limit behind a proxy**: failed share-link redemptions are limited per `X-Forwarded-For` / `CF-Connecting-IP`; without them all clients share one bucket.
