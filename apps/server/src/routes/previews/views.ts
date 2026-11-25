@@ -9,7 +9,7 @@ import type {
   PreviewView,
 } from "@html-preview/shared";
 import type { Config } from "../../core/infra/config";
-import { deploymentUrl, previewUrl } from "../../core/infra/urls";
+import { contentBaseOf, deploymentUrl, previewUrl } from "../../core/infra/urls";
 import type { StoredLink } from "../../core/ports/link-repo.port";
 import type { FinalizeResult } from "../../domain/deploy";
 
@@ -18,7 +18,7 @@ export function toPreviewView(
   preview: Preview,
   deployment: DeploymentSummary | null,
 ): PreviewView {
-  return { ...preview, url: previewUrl(config, preview.id), deployment };
+  return { ...preview, url: previewUrl(contentBaseOf(config), preview.id), deployment };
 }
 
 export function toDeploymentView(
@@ -28,7 +28,7 @@ export function toDeploymentView(
 ): DeploymentView {
   return {
     ...deployment,
-    url: deploymentUrl(config, preview.id, deployment.id),
+    url: deploymentUrl(contentBaseOf(config), preview.id, deployment.id),
     current: preview.currentDeploymentId === deployment.id,
   };
 }
@@ -36,8 +36,8 @@ export function toDeploymentView(
 export function toDeployResponse(config: Config, result: FinalizeResult): DeployResponse {
   const { preview, deployment, created, warnings } = result;
   return {
-    url: previewUrl(config, preview.id),
-    deploymentUrl: deploymentUrl(config, preview.id, deployment.id),
+    url: previewUrl(contentBaseOf(config), preview.id),
+    deploymentUrl: deploymentUrl(contentBaseOf(config), preview.id, deployment.id),
     name: preview.name,
     deploymentId: deployment.id,
     created,

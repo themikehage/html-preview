@@ -23,6 +23,7 @@ Deploy options:
   --entry <path>       Entry file (default: index.html)
   -m, --message <txt>  Deployment message
   --pinned             Keep the preview from expiring
+  --spa / --no-spa     Serve the entry for unknown extensionless paths (single-page apps)
 
 Global options:
   --json               Print exactly the API response (or error body) on stdout

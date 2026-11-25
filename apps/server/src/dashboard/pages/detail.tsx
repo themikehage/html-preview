@@ -39,6 +39,7 @@ function Header({ preview, effective }: Pick<DetailProps, "preview" | "effective
             <Badge tone="amber">limited by MAX_VISIBILITY</Badge>
           ) : null}{" "}
           {preview.pinned ? <Badge tone="green">pinned</Badge> : null}
+          {preview.spa ? <Badge tone="blue">spa</Badge> : null}
         </p>
       </div>
       <a
@@ -125,6 +126,10 @@ function Settings({ props }: { props: DetailProps }) {
         </div>
         <label class="check">
           <input type="checkbox" name="pinned" value="1" checked={preview.pinned} /> Pinned
+        </label>
+        <label class="check">
+          <input type="checkbox" name="spa" value="1" checked={preview.spa} /> Single-page app
+          (unknown paths serve the entry page)
         </label>
         <button type="submit" class="btn btn-primary">
           Save

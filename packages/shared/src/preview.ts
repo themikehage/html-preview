@@ -16,6 +16,8 @@ export const Preview = z.object({
   visibility: Visibility,
   expiresAt: z.string().datetime().nullable(),
   pinned: z.boolean(),
+  /** Unknown paths without a file extension serve the entry page (history fallback). */
+  spa: z.boolean(),
   currentDeploymentId: z.string().nullable(),
   createdBy: z.string().min(1),
   createdAt: z.string().datetime(),

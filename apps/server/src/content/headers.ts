@@ -2,13 +2,24 @@
 
 import type { Config } from "../core/infra/config";
 
-const SANDBOX =
-  "sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads";
+const SANDBOX_FLAGS =
+  "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads";
 
-export function securityHeaders(config: Pick<Config, "APP_ORIGIN" | "FRAME_ANCESTORS">): Headers {
+export type HeaderConfig = Pick<Config, "APP_ORIGIN" | "FRAME_ANCESTORS" | "CONTENT_MODE">;
+
+/**
+ * Path mode: opaque origin (no `allow-same-origin`), so previews share nothing with each
+ * other or with the API. Subdomain mode: each preview has its own origin, so it may keep it
+ * (`allow-same-origin`) and use localStorage, cookies and root-relative URLs.
+ */
+export function securityHeaders(config: HeaderConfig): Headers {
   const ancestors = [config.APP_ORIGIN, ...config.FRAME_ANCESTORS].join(" ");
+  const sandbox =
+    config.CONTENT_MODE === "subdomain"
+      ? `sandbox allow-same-origin ${SANDBOX_FLAGS}`
+      : `sandbox ${SANDBOX_FLAGS}`;
   return new Headers({
-    "Content-Security-Policy": `${SANDBOX}; frame-ancestors ${ancestors}`,
+    "Content-Security-Policy": `${sandbox}; frame-ancestors ${ancestors}`,
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
@@ -16,11 +27,7 @@ export function securityHeaders(config: Pick<Config, "APP_ORIGIN" | "FRAME_ANCES
   });
 }
 
-export function plainResponse(
-  config: Pick<Config, "APP_ORIGIN" | "FRAME_ANCESTORS">,
-  status: number,
-  text: string,
-): Response {
+export function plainResponse(config: HeaderConfig, status: number, text: string): Response {
   const headers = securityHeaders(config);
   headers.set("Content-Type", "text/plain; charset=utf-8");
   headers.set("Cache-Control", "no-store");

@@ -46,6 +46,7 @@ export function deployCrud(ctx: ServerContext): Hono<AppEnv> {
         ...(query.message ? { message: query.message } : {}),
         ...(query.visibility ? { visibility: query.visibility } : {}),
         ...(query.ttl !== undefined ? { ttlHours: query.ttl } : {}),
+        ...(query.spa !== undefined ? { spa: query.spa } : {}),
       });
       return c.json(toDeployResponse(config, result), result.created ? 201 : 200);
     },

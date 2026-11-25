@@ -14,6 +14,7 @@ export function deployOptions(ctx: Ctx, target: string) {
     entry: args.entry,
     message: args.message,
     pinned: args.pinned,
+    spa: args.spa,
   };
 }
 

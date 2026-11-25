@@ -17,6 +17,7 @@ export interface DeployFilesInput {
   message?: string;
   visibility?: Visibility;
   ttlHours?: number;
+  spa?: boolean;
   createdBy: string;
 }
 

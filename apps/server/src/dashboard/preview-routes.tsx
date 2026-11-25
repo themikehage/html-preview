@@ -153,6 +153,7 @@ export function previewRoutes(ctx: ServerContext): Hono<DashEnv> {
         ...(visibility.success ? { visibility: visibility.data } : {}),
         ...(ttlRaw !== "" ? { ttlHours: Number(ttlRaw) } : {}),
         pinned: field(body, "pinned") === "1",
+        spa: field(body, "spa") === "1",
       });
       return { notice: "Settings saved." };
     });

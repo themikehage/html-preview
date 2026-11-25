@@ -25,6 +25,7 @@ export interface PlanInput {
   message?: string;
   visibility?: Visibility;
   ttlHours?: number;
+  spa?: boolean;
   createdBy: string;
 }
 
@@ -108,18 +109,23 @@ export async function planDeployment(deps: DomainDeps, input: PlanInput): Promis
         visibility: input.visibility ?? defaultVisibility(deps.maxVisibility),
         expiresAt: expiryFrom(now, input.ttlHours ?? deps.defaultTtlHours),
         pinned: false,
+        spa: input.spa ?? false,
         currentDeploymentId: null,
         createdBy: input.createdBy,
         createdAt,
         updatedAt: createdAt,
       });
     }
-    if (existing && (input.visibility !== undefined || input.ttlHours !== undefined)) {
+    if (
+      existing &&
+      (input.visibility !== undefined || input.ttlHours !== undefined || input.spa !== undefined)
+    ) {
       deps.previews.update(
         id,
         {
           ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
           ...(input.ttlHours !== undefined ? { expiresAt: expiryFrom(now, input.ttlHours) } : {}),
+          ...(input.spa !== undefined ? { spa: input.spa } : {}),
         },
         createdAt,
       );

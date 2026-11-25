@@ -27,6 +27,7 @@ async function deploy(
     entry?: string | undefined;
     visibility?: "unlisted" | "private" | "public" | undefined;
     ttlHours?: number | undefined;
+    spa?: boolean | undefined;
   },
 ) {
   const bytes = args.files.reduce((total, file) => total + file.content.length, 0);
@@ -39,6 +40,7 @@ async function deploy(
     ...(args.entry ? { entry: args.entry } : {}),
     ...(args.visibility ? { visibility: args.visibility } : {}),
     ...(args.ttlHours !== undefined ? { ttlHours: args.ttlHours } : {}),
+    ...(args.spa !== undefined ? { spa: args.spa } : {}),
   });
   const response = toDeployResponse(env.ctx.config, result);
   const warned = response.warnings.length

@@ -17,6 +17,7 @@ export interface DeployOptions {
   entry?: string | undefined;
   message?: string | undefined;
   pinned?: boolean | undefined;
+  spa?: boolean | undefined;
 }
 
 /** Manifest flow: hash locally, upload only the blobs the server lacks, finalize. */
@@ -43,6 +44,7 @@ export async function deployOnce(
     ...(options.message ? { message: options.message } : {}),
     ...(options.visibility ? { visibility: options.visibility } : {}),
     ...(options.ttl !== undefined ? { ttl: options.ttl } : {}),
+    ...(options.spa !== undefined ? { spa: options.spa } : {}),
   });
   const byHash = new Map(source.files.map((file) => [file.hash, file.abs]));
   await mapPool(plan.missing, UPLOAD_CONCURRENCY, async (hash) => {

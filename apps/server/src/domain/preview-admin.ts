@@ -11,6 +11,7 @@ export interface UpdatePreviewInput {
   visibility?: Visibility;
   ttlHours?: number;
   pinned?: boolean;
+  spa?: boolean;
   newName?: PreviewName;
 }
 
@@ -28,6 +29,7 @@ export function updatePreview(deps: DomainDeps, input: UpdatePreviewInput): Prev
     ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
     ...(input.ttlHours !== undefined ? { expiresAt: expiryFrom(now, input.ttlHours) } : {}),
     ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
+    ...(input.spa !== undefined ? { spa: input.spa } : {}),
     ...(input.newName !== undefined ? { name: input.newName } : {}),
   };
   const updatedAt = now.toISOString();

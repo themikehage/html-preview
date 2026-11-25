@@ -41,6 +41,30 @@ Detrás de un proxy, los intentos fallidos de canje de enlaces se limitan por `X
 3. Define `CONTENT_ORIGIN` con el dominio de contenido. Coolify genera `ADMIN_PASSWORD` y `SIGNING_SECRET`.
 4. Despliega y comprueba `https://<APP_ORIGIN>/healthz`.
 
+## Modo subdominio (opcional)
+
+Por defecto (`CONTENT_MODE=path`) cada preview vive en `CONTENT_ORIGIN/<id>/` dentro de un sandbox opaco: sin `localStorage`, cookies ni IndexedDB, y las URLs absolutas (`/assets/app.js`) se reescriben solo en el HTML. Con `CONTENT_MODE=subdomain` cada preview tiene **su propio origen**, así que funcionan el almacenamiento, las URLs absolutas y las apps SPA con rutas reales.
+
+| URL | Qué sirve |
+|---|---|
+| `<id>.p.example.com` | la preview (el `<id>` es el id en base32 minúsculas, 26 caracteres; la respuesta de deploy ya trae la URL) |
+| `<nombre>.p.example.com` | solo previews `public` |
+| `<id>--<deploy>.p.example.com` | un despliegue fijo |
+
+Requisitos:
+
+1. **DNS comodín**: `*.p.example.com` (y `p.example.com`) apuntando al servidor.
+2. **TLS comodín** (un certificado por subdominio no escala):
+   - Caddy: certificado `*.p.example.com` con el reto DNS de tu proveedor (`tls { dns <proveedor> … }`, requiere el módulo DNS), o `on_demand_tls` con un endpoint `ask` que valide el host.
+   - Coolify/Traefik: configura un resolver ACME con **DNS challenge** (Cloudflare, etc.) y el dominio `*.p.example.com` en el servicio.
+3. `APP_ORIGIN` no puede ser `CONTENT_ORIGIN` ni uno de sus subdominios (el servidor lo rechaza al arrancar).
+
+En local: `CONTENT_ORIGIN=http://content.localhost:3000 CONTENT_MODE=subdomain` (los navegadores resuelven `*.localhost` a tu máquina).
+
+Qué cambia en la seguridad: el CSP de las previews incluye `allow-same-origin`, pero cada una sigue en un origen distinto del de la API y del panel y de las demás. Las cookies de las previews no tienen `Domain`, así que son del host de cada preview; aun así, una preview puede escribir cookies del dominio padre (`.p.example.com`), que afectarían a las demás. Usa un dominio de contenido dedicado y, si es posible, inclúyelo en la [Public Suffix List](https://publicsuffix.org/). Las previews `private` reciben una cookie `HttpOnly` (`hp_cap`) tras canjear el enlace o el ticket, y el token desaparece de la URL.
+
+**SPA.** Marca una preview con `--spa` (CLI), `spa=true` (API/MCP) o la casilla del panel: cualquier ruta sin extensión que no exista devuelve el `index` con 200. Las rutas de assets deben resolverse desde cualquier ruta (en modo ruta, usa URLs relativas con `<base>`; en modo subdominio, las absolutas funcionan).
+
 ## Copias de seguridad y restauración
 
 `DATA_DIR` (`/data`) contiene `html-preview.sqlite` y `blobs/`.

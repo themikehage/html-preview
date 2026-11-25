@@ -9,8 +9,11 @@ const TTL_HOURS_MAX = 24 * 365 * 10;
 const Ttl = z.number().int().min(0).max(TTL_HOURS_MAX);
 const Message = z.string().max(500);
 
+const Flag = z.enum(["true", "false"]).transform((value) => value === "true");
+
 export const DeployQuery = z.object({
   visibility: Visibility.optional(),
+  spa: Flag.optional(),
   ttl: z.coerce.number().pipe(Ttl).optional(),
   entry: z.string().min(1).optional(),
   message: Message.optional(),
@@ -27,6 +30,7 @@ export const PlanDeploymentRequest = z.object({
   message: Message.optional(),
   visibility: Visibility.optional(),
   ttl: Ttl.optional(),
+  spa: z.boolean().optional(),
 });
 export type PlanDeploymentRequest = z.infer<typeof PlanDeploymentRequest>;
 
@@ -44,6 +48,7 @@ export const UpdatePreviewRequest = z
     visibility: Visibility.optional(),
     ttl: Ttl.optional(),
     pinned: z.boolean().optional(),
+    spa: z.boolean().optional(),
     name: PreviewName.optional(),
   })
   .refine((body) => Object.keys(body).length > 0, "at least one field is required");

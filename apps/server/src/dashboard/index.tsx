@@ -26,14 +26,15 @@ import STYLES from "./styles.css" with { type: "text" };
 
 const LOGIN_ATTEMPTS_PER_MIN = 10;
 
-function securityHeaders(contentOrigin: string): Record<string, string> {
+function securityHeaders(contentOrigin: string, wildcard: boolean): Record<string, string> {
+  const frames = wildcard ? contentOrigin.replace("//", "//*.") : contentOrigin;
   return {
     "Content-Security-Policy": [
       "default-src 'none'",
       "style-src 'self'",
       "script-src 'self'",
       "img-src 'self'",
-      `frame-src ${contentOrigin}`,
+      `frame-src ${frames}`,
       "form-action 'self'",
       "base-uri 'none'",
       "frame-ancestors 'none'",
@@ -54,7 +55,7 @@ export function dashboardRouter(ctx: ServerContext, password: string): Hono<Dash
   const { deps, config } = ctx;
   const app = new Hono<DashEnv>();
   const logins = new TokenBucketLimiter(LOGIN_ATTEMPTS_PER_MIN, deps.clock);
-  const headers = securityHeaders(config.CONTENT_ORIGIN);
+  const headers = securityHeaders(config.CONTENT_ORIGIN, config.CONTENT_MODE === "subdomain");
 
   app.use("*", async (c, next) => {
     await next();

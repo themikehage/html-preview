@@ -90,7 +90,7 @@ export function registerManageTools(server: McpServer, env: McpEnv): void {
     {
       title: "Update a preview",
       description:
-        "Change visibility, expiry (ttlHours, 0 = never) or pinned of an existing preview.",
+        "Change visibility, expiry (ttlHours, 0 = never), pinned or spa of an existing preview.",
       inputSchema: UpdatePreviewArgs.shape,
       outputSchema: PreviewView.shape,
       annotations: change,
@@ -102,6 +102,7 @@ export function registerManageTools(server: McpServer, env: McpEnv): void {
           ...(args.visibility ? { visibility: args.visibility } : {}),
           ...(args.ttlHours !== undefined ? { ttlHours: args.ttlHours } : {}),
           ...(args.pinned !== undefined ? { pinned: args.pinned } : {}),
+          ...(args.spa !== undefined ? { spa: args.spa } : {}),
         });
         const current = preview.currentDeploymentId
           ? deps.deployments.findSummary(preview.currentDeploymentId)

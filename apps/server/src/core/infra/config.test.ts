@@ -52,3 +52,24 @@ describe("loadConfig", () => {
     ]);
   });
 });
+
+describe("subdomain mode", () => {
+  test("accepts a content host that is a sibling of the app host", () => {
+    const config = loadConfig({
+      CONTENT_MODE: "subdomain",
+      APP_ORIGIN: "https://previews.example.com",
+      CONTENT_ORIGIN: "https://p.example.com",
+    });
+    expect(config.CONTENT_MODE).toBe("subdomain");
+  });
+
+  test("refuses an app host inside the content host's namespace", () => {
+    expect(() =>
+      loadConfig({
+        CONTENT_MODE: "subdomain",
+        APP_ORIGIN: "https://app.p.example.com",
+        CONTENT_ORIGIN: "https://p.example.com",
+      }),
+    ).toThrow(ConfigError);
+  });
+});

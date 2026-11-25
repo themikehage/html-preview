@@ -63,6 +63,9 @@ const MIGRATIONS: readonly string[] = [
   );
   CREATE INDEX share_links_preview_idx ON share_links (preview_id);
   `,
+  `
+  ALTER TABLE previews ADD COLUMN spa INTEGER NOT NULL DEFAULT 0;
+  `,
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS.length;

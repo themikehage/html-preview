@@ -14,7 +14,7 @@ type Finding = { code: WarningCode; fix: string };
 const LOCAL = "localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0|\\[::1\\]";
 
 const FIX = {
-  root: "Build with relative asset URLs (Vite: base './'; webpack: publicPath ''), or use paths without a leading '/'",
+  root: "Build with relative asset URLs (Vite: base './'; webpack: publicPath ''), or use paths without a leading '/'. The operator can also enable CONTENT_MODE=subdomain, where root URLs work as written",
   local:
     "Replace localhost URLs with relative paths or public https:// URLs; the preview runs elsewhere",
   mixed: "Load scripts, styles, images and media over https:// or use relative paths",

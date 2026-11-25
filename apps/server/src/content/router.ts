@@ -7,7 +7,7 @@ import { healthRouter } from "../routes/health";
 import { plainResponse, securityHeaders } from "./headers";
 import { parseRange } from "./range";
 import { REDEEM_FAILURES_PER_MIN, clientKey, redeem } from "./redeem";
-import { resolveContent } from "./resolve";
+import { CAPABILITY_COOKIE, resolveContent } from "./resolve";
 import { rewriteRootRelative } from "./rewrite-root-relative";
 
 const IMMUTABLE = "public, max-age=31536000, immutable";
@@ -18,6 +18,14 @@ function matches(header: string | null, etag: string): boolean {
     .split(",")
     .map((tag) => tag.trim().replace(/^W\//, ""))
     .some((tag) => tag === "*" || tag === etag);
+}
+
+function readCookie(header: string | null, name: string): string | null {
+  for (const part of (header ?? "").split(";")) {
+    const [key, ...value] = part.trim().split("=");
+    if (key === name) return value.join("=") || null;
+  }
+  return null;
 }
 
 export function createContentApp(ctx: ServerContext): Hono {
@@ -31,7 +39,16 @@ export function createContentApp(ctx: ServerContext): Hono {
     if (method !== "GET" && method !== "HEAD") {
       return plainResponse(config, 405, "Method not allowed");
     }
-    const resolution = resolveContent(deps, new URL(c.req.url), deps.clock.now());
+    const request = c.req.raw;
+    const resolution = resolveContent(
+      deps,
+      {
+        url: new URL(request.url),
+        host: (request.headers.get("host") ?? new URL(request.url).host).toLowerCase(),
+        capabilityCookie: readCookie(request.headers.get("cookie"), CAPABILITY_COOKIE),
+      },
+      deps.clock.now(),
+    );
     if (!resolution) return plainResponse(config, 404, "Not found");
     if (resolution.kind === "redeem") {
       return redeem(deps, config, failures, resolution, clientKey(c.req.raw));
@@ -57,7 +74,9 @@ export function createContentApp(ctx: ServerContext): Hono {
 
     if (file.contentType.startsWith("text/html")) {
       const html = await blob.arrayBuffer();
-      return rewriteRootRelative(new Response(html, { headers }), prefix);
+      // Subdomain previews own their origin, so root-relative URLs already work as written.
+      const page = new Response(html, { headers });
+      return config.CONTENT_MODE === "subdomain" ? page : rewriteRootRelative(page, prefix);
     }
     headers.set("Accept-Ranges", "bytes");
     const range = parseRange(c.req.header("range") ?? null, blob.size);

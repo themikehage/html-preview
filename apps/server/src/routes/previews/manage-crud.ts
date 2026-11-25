@@ -53,6 +53,7 @@ export function manageCrud(ctx: ServerContext): Hono<AppEnv> {
         ...(body.visibility ? { visibility: body.visibility } : {}),
         ...(body.ttl !== undefined ? { ttlHours: body.ttl } : {}),
         ...(body.pinned !== undefined ? { pinned: body.pinned } : {}),
+        ...(body.spa !== undefined ? { spa: body.spa } : {}),
         ...(body.name ? { newName: body.name } : {}),
       });
       const current = preview.currentDeploymentId

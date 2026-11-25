@@ -59,5 +59,14 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
       "APP_ORIGIN and CONTENT_ORIGIN must use different hosts in production (untrusted content must never share an origin with the API)",
     ]);
   }
+  if (config.CONTENT_MODE === "subdomain") {
+    const appHost = new URL(config.APP_ORIGIN).host;
+    const contentHost = new URL(config.CONTENT_ORIGIN).host;
+    if (appHost === contentHost || appHost.endsWith(`.${contentHost}`)) {
+      throw new ConfigError([
+        "In subdomain mode APP_ORIGIN must not be CONTENT_ORIGIN or one of its subdomains (every <label>.<content host> serves untrusted previews)",
+      ]);
+    }
+  }
   return config;
 }

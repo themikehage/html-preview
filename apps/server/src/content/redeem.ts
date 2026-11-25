@@ -5,8 +5,8 @@ import type { TokenBucketLimiter } from "../core/infra/rate-limit";
 import type { DomainDeps } from "../core/ports/deps";
 import { mintCapability, verifyClaims } from "../domain/capability";
 import { redeemLink } from "../domain/links";
-import { plainResponse, securityHeaders } from "./headers";
-import type { Resolution } from "./resolve";
+import { type HeaderConfig, plainResponse, securityHeaders } from "./headers";
+import { CAPABILITY_COOKIE, type Resolution } from "./resolve";
 
 type Redeem = Extract<Resolution, { kind: "redeem" }>;
 
@@ -17,10 +17,31 @@ export function clientKey(request: Request): string {
   return forwarded || request.headers.get("cf-connecting-ip") || "unknown";
 }
 
-function redirect(location: string, config: Pick<Config, "APP_ORIGIN" | "FRAME_ANCESTORS">) {
+type RedeemConfig = HeaderConfig & Pick<Config, "CONTENT_ORIGIN">;
+
+const CAPABILITY_SECONDS = 3600;
+
+/** Host-only cookie (no `Domain`), so a capability never leaves its own preview host. */
+function capabilityCookie(config: RedeemConfig, capability: string): string {
+  const { protocol, hostname } = new URL(config.CONTENT_ORIGIN);
+  // Browsers treat https and `*.localhost` as secure contexts and accept `Secure` cookies there.
+  const secure =
+    protocol === "https:" || hostname === "localhost" || hostname.endsWith(".localhost");
+  return [
+    `${CAPABILITY_COOKIE}=${capability}`,
+    "Path=/",
+    `Max-Age=${CAPABILITY_SECONDS}`,
+    "HttpOnly",
+    // Embedded by the dashboard: over https the cookie must also work in a cross-site frame.
+    secure ? "SameSite=None; Secure" : "SameSite=Lax",
+  ].join("; ");
+}
+
+function redirect(resolution: Redeem, capability: string, config: RedeemConfig) {
   const headers = securityHeaders(config);
-  headers.set("Location", location);
+  headers.set("Location", resolution.location(capability));
   headers.set("Cache-Control", "no-store");
+  if (resolution.viaCookie) headers.append("Set-Cookie", capabilityCookie(config, capability));
   return new Response(null, { status: 302, headers });
 }
 
@@ -31,7 +52,7 @@ function redirect(location: string, config: Pick<Config, "APP_ORIGIN" | "FRAME_A
  */
 export function redeem(
   deps: DomainDeps,
-  config: Pick<Config, "APP_ORIGIN" | "FRAME_ANCESTORS">,
+  config: RedeemConfig,
   failures: TokenBucketLimiter,
   resolution: Redeem,
   client: string,
@@ -56,11 +77,11 @@ export function redeem(
       linkId: link.id,
       notAfter: link.expiresAt,
     });
-    return redirect(resolution.location(capability), config);
+    return redirect(resolution, capability, config);
   }
 
   const ticket = verifyClaims(deps.signingSecret, token, "ticket", now);
   if (!ticket || ticket.p !== preview.id) return plainResponse(config, 404, "Not found");
   const capability = mintCapability(deps.signingSecret, now, { previewId: preview.id });
-  return redirect(resolution.location(capability), config);
+  return redirect(resolution, capability, config);
 }

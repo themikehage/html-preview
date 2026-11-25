@@ -27,7 +27,9 @@ export function deployLines(result: DeployResponse): string[] {
 }
 
 export function previewLine(view: PreviewView): string {
-  const flags = [view.visibility, view.pinned ? "pinned" : null].filter(Boolean).join(", ");
+  const flags = [view.visibility, view.pinned ? "pinned" : null, view.spa ? "spa" : null]
+    .filter(Boolean)
+    .join(", ");
   const expiry = view.expiresAt ? `expires ${view.expiresAt}` : "no expiry";
   return `${view.name}  ${view.url}  (${flags}; ${expiry})`;
 }

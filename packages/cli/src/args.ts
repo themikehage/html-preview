@@ -18,6 +18,8 @@ const OPTIONS = {
   entry: { type: "string" },
   message: { type: "string", short: "m" },
   pinned: { type: "boolean" },
+  spa: { type: "boolean" },
+  "no-spa": { type: "boolean" },
   to: { type: "string" },
   query: { type: "string", short: "q" },
   limit: { type: "string" },
@@ -42,6 +44,7 @@ export interface Parsed {
   entry?: string | undefined;
   message?: string | undefined;
   pinned: boolean;
+  spa?: boolean | undefined;
   to?: string | undefined;
   query?: string | undefined;
   limit?: number | undefined;
@@ -59,6 +62,13 @@ function toInt(flag: string, raw: string | undefined, min: number): number | und
     throw new UsageError(`--${flag} must be an integer >= ${min}`, `Got ${JSON.stringify(raw)}`);
   }
   return value;
+}
+
+function toSpa(on: boolean | undefined, off: boolean | undefined): boolean | undefined {
+  if (on && off) {
+    throw new UsageError("--spa and --no-spa conflict", "Pass only one of them", "USAGE");
+  }
+  return on ? true : off ? false : undefined;
 }
 
 function toVisibility(raw: string | undefined): Visibility | undefined {
@@ -99,6 +109,7 @@ export function parseCli(argv: string[]): Parsed {
     entry: values.entry,
     message: values.message,
     pinned: values.pinned ?? false,
+    spa: toSpa(values.spa, values["no-spa"]),
     to: values.to,
     query: values.query,
     limit: toInt("limit", values.limit, 1),

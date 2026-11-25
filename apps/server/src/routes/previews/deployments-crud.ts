@@ -31,6 +31,7 @@ export function deploymentsCrud(ctx: ServerContext): Hono<AppEnv> {
         ...(body.message ? { message: body.message } : {}),
         ...(body.visibility ? { visibility: body.visibility } : {}),
         ...(body.ttl !== undefined ? { ttlHours: body.ttl } : {}),
+        ...(body.spa !== undefined ? { spa: body.spa } : {}),
       });
       const response: PlanDeploymentResponse = {
         deploymentId: plan.deploymentId,

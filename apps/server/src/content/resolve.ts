@@ -2,6 +2,7 @@
 
 import type { DeploymentSummary, ManifestFile, Preview } from "@html-preview/shared";
 import { AppError } from "../core/infra/errors";
+import { type HostTarget, targetFromHost } from "../core/infra/labels";
 import type { DomainDeps } from "../core/ports/deps";
 import { verifyClaims } from "../domain/capability";
 import { isLinkActive } from "../domain/links";
@@ -11,10 +12,14 @@ import { effectiveVisibility } from "../domain/visibility";
 export type Resolution =
   | { kind: "redirect"; location: string }
   | {
-      /** A share token or owner ticket that must be exchanged for a capability in the path. */
+      /**
+       * A share token or owner ticket to exchange for a capability: carried in the path in
+       * path mode, or in an `HttpOnly` host-only cookie in subdomain mode (`viaCookie`).
+       */
       kind: "redeem";
       preview: Preview;
       token: string;
+      viaCookie: boolean;
       location(capability: string): string;
     }
   | {
@@ -60,11 +65,23 @@ function decodeSegments(parts: string[]): string[] | null {
   }
 }
 
+function spaFallback(
+  deps: DomainDeps,
+  deployment: DeploymentSummary,
+  enabled: boolean,
+  path: string,
+): { file: ManifestFile } | null {
+  if (!enabled || path.split("/").at(-1)?.includes(".")) return null;
+  const file = deps.deployments.findFile(deployment.id, deployment.entry);
+  return file ? { file } : null;
+}
+
 function lookup(
   deps: DomainDeps,
   deployment: DeploymentSummary,
   rest: string[],
   trailingSlash: boolean,
+  spa: boolean,
 ): { file: ManifestFile } | { redirect: true } | null {
   if (rest.length === 0) {
     const file = deps.deployments.findFile(deployment.id, deployment.entry);
@@ -78,46 +95,101 @@ function lookup(
     throw error;
   }
   const index = deps.deployments.findFile(deployment.id, `${path}/index.html`);
-  if (trailingSlash) return index ? { file: index } : null;
+  if (trailingSlash) return index ? { file: index } : spaFallback(deps, deployment, spa, path);
   const file = deps.deployments.findFile(deployment.id, path);
   if (file) return { file };
-  return index ? { redirect: true } : null;
+  return index ? { redirect: true } : spaFallback(deps, deployment, spa, path);
 }
 
-export function resolveContent(deps: DomainDeps, url: URL, now: Date): Resolution | null {
+export interface ContentRequest {
+  url: URL;
+  /** Lowercase `Host` header; picks the preview in subdomain mode. */
+  host: string;
+  /** Value of the `hp_cap` cookie (subdomain mode, private previews). */
+  capabilityCookie: string | null;
+}
+
+export const CAPABILITY_COOKIE = "hp_cap";
+
+interface Located {
+  keys: string[];
+  fixedId: string | null;
+  rest: string[];
+  /** Path-mode segment (`<id>[@dep]`), re-used for redirects and URL rewriting. */
+  segment: string | null;
+}
+
+function locate(deps: DomainDeps, request: ContentRequest, parts: string[]): Located | null {
+  const decoded = decodeSegments(parts);
+  if (!decoded) return null;
+  if (deps.contentMode === "subdomain") {
+    const contentHost = new URL(deps.contentOrigin).host.toLowerCase();
+    const target: HostTarget | null = targetFromHost(request.host, contentHost);
+    if (!target) return null;
+    return { keys: target.keys, fixedId: target.deploymentId, rest: decoded, segment: null };
+  }
+  const [segment, ...segments] = decoded;
+  if (!segment) return null;
+  const at = segment.indexOf("@");
+  return {
+    keys: [at === -1 ? segment : segment.slice(0, at)],
+    fixedId: at === -1 ? null : segment.slice(at + 1),
+    rest: segments,
+    segment,
+  };
+}
+
+export function resolveContent(
+  deps: DomainDeps,
+  request: ContentRequest,
+  now: Date,
+): Resolution | null {
+  const { url } = request;
   const trailingSlash = url.pathname.endsWith("/");
   const parts = url.pathname.split("/").filter((part) => part !== "");
-  const decoded = decodeSegments(parts);
-  const [segment, ...segments] = decoded ?? [];
-  if (!segment) return null;
-  let rest = segments;
+  const found = locate(deps, request, parts);
+  if (!found) return null;
+  const subdomain = deps.contentMode === "subdomain";
+  const { fixedId } = found;
+  let rest = found.rest;
 
-  const at = segment.indexOf("@");
-  const key = at === -1 ? segment : segment.slice(0, at);
-  const fixedId = at === -1 ? null : segment.slice(at + 1);
-  const preview = findPreview(deps, key);
-  if (!preview || !isLive(preview, now) || (fixedId !== null && preview.id !== key)) return null;
+  const preview = found.keys.map((key) => findPreview(deps, key)).find((item) => item !== null);
+  if (!preview || !isLive(preview, now)) return null;
+  if (fixedId !== null && preview.id !== found.keys[0]) return null;
 
   const restricted = visibilityOf(deps, preview) === "private";
-  const segmentPrefix = `/${encodeURIComponent(segment).replace(/%40/g, "@")}`;
+  const segmentPrefix = subdomain
+    ? ""
+    : `/${encodeURIComponent(found.segment ?? "").replace(/%40/g, "@")}`;
   let prefix = segmentPrefix;
   if (restricted) {
-    // Private previews need `~<token>` right after the id; anything else is a plain 404.
+    // Private previews need a capability. Path mode: `~<token>` right after the id, either a
+    // capability or something to exchange for one. Subdomain mode: `~<token>` is always an
+    // exchange (it ends in a cookie and a clean URL); afterwards the cookie is the proof.
     const marker = rest[0];
-    if (!marker?.startsWith("~")) return null;
-    const token = marker.slice(1);
-    rest = rest.slice(1);
-    if (!capabilityHolds(deps, preview, token, now)) {
+    const token = marker?.startsWith("~") ? marker.slice(1) : null;
+    if (token !== null) rest = rest.slice(1);
+    const exchange = (): Resolution => {
       const tail = rest.map((part) => encodeURIComponent(part)).join("/");
       const suffix = `${tail}${trailingSlash && tail ? "/" : ""}${url.search}`;
       return {
         kind: "redeem",
         preview,
-        token,
-        location: (capability) => `${segmentPrefix}/~${capability}/${suffix}`,
+        token: token ?? "",
+        viaCookie: subdomain,
+        location: (capability) =>
+          subdomain ? `/${suffix}` : `${segmentPrefix}/~${capability}/${suffix}`,
       };
+    };
+    if (subdomain) {
+      if (token !== null) return exchange();
+      const cookie = request.capabilityCookie;
+      if (!cookie || !capabilityHolds(deps, preview, cookie, now)) return null;
+    } else {
+      if (token === null) return null;
+      if (!capabilityHolds(deps, preview, token, now)) return exchange();
+      prefix = `${segmentPrefix}/~${token}`;
     }
-    prefix = `${segmentPrefix}/~${token}`;
   }
 
   const deploymentId = fixedId ?? preview.currentDeploymentId;
@@ -129,16 +201,16 @@ export function resolveContent(deps: DomainDeps, url: URL, now: Date): Resolutio
   if (rest.length === 0 && !trailingSlash) {
     return { kind: "redirect", location: `${prefix}/${url.search}` };
   }
-  const found = lookup(deps, deployment, rest, trailingSlash);
-  if (!found) return null;
-  if ("redirect" in found) {
+  const hit = lookup(deps, deployment, rest, trailingSlash, preview.spa);
+  if (!hit) return null;
+  if ("redirect" in hit) {
     return { kind: "redirect", location: `${url.pathname}/${url.search}` };
   }
   return {
     kind: "file",
     preview,
     deployment,
-    file: found.file,
+    file: hit.file,
     prefix,
     fixed: fixedId !== null,
     restricted,

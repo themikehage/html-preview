@@ -13,7 +13,7 @@ export interface HostApps {
 }
 
 export function dispatchByHost(
-  config: Pick<Config, "APP_ORIGIN" | "CONTENT_ORIGIN">,
+  config: Pick<Config, "APP_ORIGIN" | "CONTENT_ORIGIN" | "CONTENT_MODE">,
   apps: HostApps,
 ): (request: Request) => Response | Promise<Response> {
   const appHost = new URL(config.APP_ORIGIN).host.toLowerCase();
@@ -22,9 +22,12 @@ export function dispatchByHost(
     const host = (request.headers.get("host") ?? new URL(request.url).host).toLowerCase();
     if (host === appHost) return apps.app.fetch(request);
     if (host === contentHost) return apps.content.fetch(request);
+    if (config.CONTENT_MODE === "subdomain" && host.endsWith(`.${contentHost}`)) {
+      return apps.content.fetch(request);
+    }
     throw new MisdirectedRequest(
       `Host "${host}" is not served here`,
-      `Use ${config.APP_ORIGIN} for the API or ${config.CONTENT_ORIGIN} for preview content`,
+      `Use ${config.APP_ORIGIN} for the API or ${config.CONTENT_ORIGIN} for preview content${config.CONTENT_MODE === "subdomain" ? " (previews live on <label>.<content host>)" : ""}`,
     );
   };
 }

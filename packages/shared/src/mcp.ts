@@ -13,6 +13,11 @@ const ttlHours = z
 const name = PreviewName.describe(
   "Preview name: lowercase letters, digits and hyphens (e.g. 'landing-v2'). Re-deploying the same name updates it",
 );
+const spa = z
+  .boolean()
+  .describe(
+    "Single-page app: unknown paths without a file extension serve the entry page (history fallback). Use relative or root asset URLs that resolve from any path",
+  );
 const visibility = Visibility.describe(
   "unlisted (default), public, or private (reachable only through a share link)",
 );
@@ -22,6 +27,7 @@ export const DeployHtmlArgs = z.object({
   html: z.string().min(1).describe("A complete, self-contained HTML document"),
   visibility: visibility.optional(),
   ttlHours: ttlHours.optional(),
+  spa: spa.optional(),
 });
 
 export const DeployFilesArgs = z.object({
@@ -34,6 +40,7 @@ export const DeployFilesArgs = z.object({
   entry: z.string().min(1).optional().describe("Entry file; defaults to index.html"),
   visibility: visibility.optional(),
   ttlHours: ttlHours.optional(),
+  spa: spa.optional(),
 });
 
 export const ListPreviewsArgs = z.object({
@@ -48,6 +55,7 @@ export const UpdatePreviewArgs = z.object({
   visibility: visibility.optional(),
   ttlHours: ttlHours.optional(),
   pinned: z.boolean().optional().describe("Pinned previews never expire"),
+  spa: spa.optional(),
 });
 
 export const RollbackPreviewArgs = z.object({

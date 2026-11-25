@@ -14,6 +14,7 @@ export interface PreviewPatch {
   visibility?: Visibility;
   expiresAt?: string | null;
   pinned?: boolean;
+  spa?: boolean;
 }
 
 export interface PreviewRepo {

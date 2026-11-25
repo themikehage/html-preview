@@ -2,6 +2,7 @@
 
 import { LINK_DEFAULT_HOURS, MAX_ACTIVE_LINKS } from "@html-preview/shared";
 import { Conflict, NotFound } from "../core/infra/errors";
+import { contentUrl } from "../core/infra/urls";
 import type { DomainDeps } from "../core/ports/deps";
 import type { StoredLink } from "../core/ports/link-repo.port";
 import { sha256Hex } from "./hash";
@@ -15,9 +16,9 @@ export interface CreateLinkInput {
   createdBy: string;
 }
 
-/** The secret URL; `${CONTENT_ORIGIN}/<id>/~<token>/`. Only ever returned at creation. */
+/** The secret URL (`…/~<token>/` on the preview). Only ever returned at creation. */
 export function shareUrl(deps: DomainDeps, previewId: string, token: string): string {
-  return `${deps.contentOrigin}/${previewId}/~${token}/`;
+  return contentUrl(deps, previewId, { token });
 }
 
 export function createLink(

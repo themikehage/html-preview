@@ -10,6 +10,7 @@ interface PreviewRow {
   visibility: Visibility;
   expires_at: string | null;
   pinned: number;
+  spa: number;
   current_deployment_id: string | null;
   created_by: string;
   created_at: string;
@@ -23,6 +24,7 @@ function toPreview(row: PreviewRow): Preview {
     visibility: row.visibility,
     expiresAt: row.expires_at,
     pinned: row.pinned === 1,
+    spa: row.spa === 1,
     currentDeploymentId: row.current_deployment_id,
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -88,6 +90,10 @@ export class SqlitePreviewRepo implements PreviewRepo {
       sets.push("pinned = ?");
       params.push(patch.pinned ? 1 : 0);
     }
+    if (patch.spa !== undefined) {
+      sets.push("spa = ?");
+      params.push(patch.spa ? 1 : 0);
+    }
     sets.push("updated_at = ?");
     params.push(updatedAt, id);
     this.db.query(`UPDATE previews SET ${sets.join(", ")} WHERE id = ?`).run(...params);
@@ -96,8 +102,8 @@ export class SqlitePreviewRepo implements PreviewRepo {
   create(preview: Preview): void {
     this.db
       .query(
-        `INSERT INTO previews (id, name, visibility, expires_at, pinned, current_deployment_id, created_by, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO previews (id, name, visibility, expires_at, pinned, spa, current_deployment_id, created_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         preview.id,
@@ -105,6 +111,7 @@ export class SqlitePreviewRepo implements PreviewRepo {
         preview.visibility,
         preview.expiresAt,
         preview.pinned ? 1 : 0,
+        preview.spa ? 1 : 0,
         preview.currentDeploymentId,
         preview.createdBy,
         preview.createdAt,

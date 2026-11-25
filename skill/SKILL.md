@@ -70,6 +70,7 @@ Every deploy returns `warnings` with the file and a `fix`. Fix them and redeploy
 ## TTL etiquette
 
 - Throwaway previews: short `ttlHours` (e.g. 24). The default is 7 days.
+- Single-page app with client-side routes (React Router…): deploy with `spa: true` (CLI `--spa`) so deep links serve the entry page; build with relative asset URLs unless the instance runs in subdomain mode.
 - Something the user wants to keep: `update_preview` with `pinned: true`.
 - Don't pin by default. Expired previews are deleted.
 

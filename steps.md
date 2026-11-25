@@ -8,8 +8,8 @@ Keep it lean: every entry is **one line + a link to its plan** (archived in `pla
 
 ## Backlog
 
-- [ ] **H8 — Packaging and release** (in progress; A3, A6 repo/GHCR, A7 tag pending approval): Docker, compose, Coolify template, README, v0.1.0 → [plan](./plans/H8-packaging-and-release.md)
-- [ ] **H9 — Subdomain mode and SPA**: `CONTENT_MODE=subdomain`, `spa` fallback → [plan](./plans/H9-subdomain-mode-and-spa.md)
+- [ ] **H8 — Packaging and release** (open: CLI not on npm yet, needs `NPM_TOKEN`): Docker, compose, Coolify template, README, v0.1.1 image → [plan](./plans/H8-packaging-and-release.md)
+
 
 ---
 
@@ -21,6 +21,7 @@ Keep it lean: every entry is **one line + a link to its plan** (archived in `pla
 
 ## Completed
 
+- [x] **H9 — Subdomain mode and SPA**: `CONTENT_MODE=subdomain` (own origin per preview, cookie-based private access), per-preview `spa` fallback → [plan](./plans/completed/H9-subdomain-mode-and-spa.md)
 - [x] **H7 — Dashboard and sharing**: server-rendered dashboard, `private` enforcement with signed path capabilities, share links (API, MCP, CLI) → [plan](./plans/completed/H7-dashboard-and-sharing.md)
 - [x] **H6 — CLI**: `html-preview login|deploy|watch|list|info|open|rollback|rm --json` , 25 KB Node bundle → [plan](./plans/completed/H6-cli.md)
 - [x] **H5 — Agent surfaces**: MCP at `/mcp`, generated `/openapi.json` + `/llms.txt`, `skill/SKILL.md`, contract tests → [plan](./plans/completed/H5-agent-surfaces.md)
