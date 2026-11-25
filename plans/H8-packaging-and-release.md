@@ -22,7 +22,7 @@
 - [x] **H8-A5** — Docs: README (es) with quickstart; `docs/self-hosting.md`, `docs/api.md` (links to OpenAPI), `docs/agents.md` (MCP config for Claude Code, Codex, Cursor; skill install); `SECURITY.md`; `CONTRIBUTING.md`.
 - [ ] **H8-A6** — Name availability checked (npm `html-preview`, GHCR, GitHub); alternative chosen with the user if taken.
 - [ ] **H8-A7** — Release workflow on tag `v*`: builds and pushes the image to GHCR, publishes the CLI to npm with provenance. First tag `v0.1.0` pushed **only after explicit approval**.
-- [ ] **H8-A8** — `verify` passes; CI also builds the Docker image.
+- [x] **H8-A8** — `verify` passes; CI also builds the Docker image.
 
 ---
 
@@ -65,9 +65,9 @@ Behavior check: `docker compose -f deploy/docker-compose.yml up`, deploy with th
 - H8-A3 — PENDING. `deploy/coolify.yml` written and YAML-valid; the multi-domain (`SERVICE_FQDN_*` + second domain in Domains) behavior is unverified until a test Coolify deploy, which needs approval.
 - H8-A4 — `POST /v1/admin/backup` (`api.backup.test.ts`: snapshot opens read-only, `integrity_check` ok, contains the preview; non-admin 403, no key 401). Verified in the container: file under `/data/backups`. Restore documented in `docs/self-hosting.md`.
 - H8-A5 — README (es), `docs/{self-hosting,api,agents}.md`, `SECURITY.md`, `CONTRIBUTING.md`; MCP/CLI names checked against `MCP_TOOL_NAMES` and `help.ts`.
-- H8-A6 — PARTIAL. npm `html-preview` is taken (v1.0.0, not ours) → user picked from `live-html`/`live-pages`/`htmlive`; `htmlive` taken, `live-html` and `live-pages` free; CLI renamed `live-pages` (bins `live-pages` + `html-preview`), `npx` hints updated. GitHub repo `themikehage/html-preview` does not exist yet (not created); GHCR namespace unverified until first push.
+- H8-A6 — PARTIAL. npm `html-preview` is taken (v1.0.0, not ours) → user picked from `live-html`/`live-pages`/`htmlive`; `htmlive` taken, `live-html` and `live-pages` free; CLI renamed `live-pages` (bins `live-pages` + `html-preview`), `npx` hints updated. GitHub repo `themikehage/html-preview` created (public) and pushed; GHCR namespace unverified until first push.
 - H8-A7 — PARTIAL. `.github/workflows/release.yml` (tag `v*`: verify, tag==versions, GHCR push, npm publish with provenance via `NPM_TOKEN`) written and YAML-valid; `npm pack --dry-run` ok (`live-pages-0.1.0.tgz`, 8.9 kB). Tag NOT pushed; needs the repo, secrets and explicit approval.
-- H8-A8 — `bun run verify` green (188 tests, bundles ok). CI `docker` job added; CI has never run (no remote).
+- H8-A8 — `bun run verify` green (188 tests, bundles ok). CI `docker` job added; CI run 45621040689 on GitHub: `verify` and `docker` jobs green.
 
 ---
 
